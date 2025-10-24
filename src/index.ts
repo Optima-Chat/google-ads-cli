@@ -10,6 +10,8 @@ import chalk from 'chalk';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { initCommand } from './commands/init.js';
+import { configCommand } from './commands/config.js';
 
 // 获取版本号
 const __filename = fileURLToPath(import.meta.url);
@@ -24,6 +26,10 @@ program
   .name('google-ads')
   .description('用自然语言管理 Google Ads 广告投放 - 专为 Claude Code 设计')
   .version(VERSION);
+
+// 注册命令
+program.addCommand(initCommand);
+program.addCommand(configCommand);
 
 // 默认动作（显示欢迎信息）
 program.action(() => {
