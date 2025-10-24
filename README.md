@@ -9,10 +9,11 @@
 ## 特性
 
 - 🎯 **完整的广告管理** - 支持广告系列、广告组、关键词、文案和效果分析
-- 🤖 **AI 友好** - 可被 Claude Code 和 AI CLI 自然语言调用
-- 🔌 **MCP 集成** - 基于 google-ads-mcp 的 MCP 协议通信
-- 📊 **美观输出** - 表格和 JSON 双格式输出
-- ⚡ **快速响应** - 实时反馈命令执行状态
+- 🤖 **AI 友好** - 可被 Claude Code 自然语言调用
+- ⚡ **直接调用** - 使用 Google Ads API 官方 SDK，性能优秀
+- 📊 **多格式输出** - 表格、JSON、CSV 多格式支持
+- 🔐 **OAuth2 认证** - 完整的 OAuth2 授权流程，自动 token 刷新
+- 💎 **架构简洁** - 2 层架构，无额外依赖，部署简单
 
 ## 快速开始
 
@@ -20,14 +21,20 @@
 # 安装
 npm install -g @optima-chat/google-ads-cli
 
-# 初始化配置
-google-ads init --mcp-url http://localhost:8240
+# 初始化配置（交互式引导）
+google-ads init
+
+# OAuth2 登录
+google-ads auth login
 
 # 查看账号列表
 google-ads account list
 
 # 创建广告系列
 google-ads campaign create --product-id 123 --budget 100
+
+# 执行 GAQL 查询（高级功能）
+google-ads query "SELECT campaign.id, campaign.name FROM campaign"
 ```
 
 ## 架构
@@ -36,11 +43,11 @@ google-ads campaign create --product-id 123 --budget 100
 Claude Code / AI CLI
         ↓
   google-ads-cli (TypeScript)
-        ↓ (MCP/SSE)
-  google-ads-mcp (Python)
-        ↓
+        ↓ (Google Ads API SDK)
    Google Ads API
 ```
+
+**设计理念**: 架构简洁优美，为长远计
 
 ## 命令概览
 
@@ -67,21 +74,48 @@ Claude Code / AI CLI
 
 查看 [完整命令文档](docs/technical-design.md) 了解更多。
 
+## 双模式设计
+
+### 结构化命令（80% 场景）
+简单、明确、LLM 易理解
+
+```bash
+google-ads campaign list
+google-ads campaign create --product-id 123 --budget 100
+google-ads keyword add <ad-group-id> --keywords "手机壳,保护壳"
+```
+
+### GAQL 查询（20% 场景）
+灵活、强大、适合复杂分析
+
+```bash
+google-ads query "
+  SELECT
+    campaign.name,
+    metrics.impressions,
+    metrics.clicks,
+    metrics.cost_micros
+  FROM campaign
+  WHERE segments.date DURING LAST_7_DAYS
+  ORDER BY metrics.clicks DESC
+"
+```
+
 ## 开发状态
 
 🚧 **项目处于早期开发阶段**
 
 - [x] 技术方案设计
-- [ ] 项目基础设施
-- [ ] 核心功能实现
-- [ ] AI CLI 集成
+- [x] 架构决策（直接 API 调用）
+- [ ] OAuth2 认证实现
+- [ ] 核心命令实现
+- [ ] GAQL 查询支持
 - [ ] 测试和文档
 
 ## 相关项目
 
-- [google-ads-mcp](https://github.com/Optima-Chat/google-ads-mcp) - Google Ads MCP Server
-- [optima-cli](https://github.com/Optima-Chat/optima-cli) - 电商管理 CLI（参考项目）
-- [optima-ai-shell](https://github.com/Optima-Chat/optima-ai-shell) - AI CLI 工具
+- [gaql-cli](https://github.com/getyourguide/gaql-cli) - GAQL 查询工具（设计参考）
+- [optima-cli](https://github.com/Optima-Chat/optima-cli) - 电商管理 CLI（技术栈参考）
 
 ## 技术栈
 
