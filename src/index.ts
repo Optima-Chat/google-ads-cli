@@ -15,6 +15,7 @@ import { configCommand } from './commands/config.js';
 import { authCommand } from './commands/auth/index.js';
 import { accountCommand } from './commands/account/index.js';
 import { campaignCommand } from './commands/campaign/index.js';
+import { adGroupCommand } from './commands/ad-group/index.js';
 import { keywordCommand } from './commands/keyword/index.js';
 import { queryCommand } from './commands/query.js';
 
@@ -38,6 +39,7 @@ program.addCommand(configCommand);
 program.addCommand(authCommand);
 program.addCommand(accountCommand);
 program.addCommand(campaignCommand);
+program.addCommand(adGroupCommand);
 program.addCommand(keywordCommand);
 program.addCommand(queryCommand);
 

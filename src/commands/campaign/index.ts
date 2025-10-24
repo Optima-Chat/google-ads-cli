@@ -5,8 +5,12 @@
 import { Command } from 'commander';
 import { listCommand } from './list.js';
 import { infoCommand } from './info.js';
+import { createCommand } from './create.js';
+import { deleteCommand } from './delete.js';
 
 export const campaignCommand = new Command('campaign')
   .description('广告系列管理')
   .addCommand(listCommand)
-  .addCommand(infoCommand);
+  .addCommand(infoCommand)
+  .addCommand(createCommand)
+  .addCommand(deleteCommand);

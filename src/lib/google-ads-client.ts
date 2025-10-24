@@ -2,7 +2,7 @@
  * Google Ads Client - 封装 Google Ads API
  */
 
-import { GoogleAdsApi, Customer } from 'google-ads-api';
+import { GoogleAdsApi, Customer, enums, MutateOperation, toMicros } from 'google-ads-api';
 import { loadConfig } from '../utils/config.js';
 import { OAuth2Manager } from './oauth2-manager.js';
 import { GoogleAdsError } from '../utils/errors.js';
@@ -390,17 +390,200 @@ export class GoogleAdsClient {
   async createCampaign(customerId: string, campaignData: {
     name: string;
     budget_amount_micros: number;
-    advertising_channel_type: string;
+    advertising_channel_type?: string;
     status?: string;
   }): Promise<any> {
     try {
       const customer = await this.getCustomer(customerId);
 
-      // 使用 mutateResources 批量创建（待实现）
-      // TODO: 实现完整的 mutateResources 操作
-      throw new Error('createCampaign 方法待实现');
+      // 创建临时资源名称
+      const budgetResourceName = `customers/${customerId}/campaignBudgets/-1`;
+
+      const operations: MutateOperation<any>[] = [
+        // 创建预算
+        {
+          entity: 'campaign_budget',
+          operation: 'create',
+          resource: {
+            resource_name: budgetResourceName,
+            name: `${campaignData.name} Budget`,
+            delivery_method: enums.BudgetDeliveryMethod.STANDARD,
+            amount_micros: campaignData.budget_amount_micros,
+          },
+        },
+        // 创建广告系列
+        {
+          entity: 'campaign',
+          operation: 'create',
+          resource: {
+            name: campaignData.name,
+            advertising_channel_type: campaignData.advertising_channel_type || enums.AdvertisingChannelType.SEARCH,
+            status: campaignData.status || enums.CampaignStatus.PAUSED,
+            campaign_budget: budgetResourceName,
+            manual_cpc: {
+              enhanced_cpc_enabled: false,
+            },
+            contains_eu_political_advertising: false,
+          },
+        },
+      ];
+
+      const result = await customer.mutateResources(operations);
+      return result;
     } catch (error: any) {
-      throw new GoogleAdsError(`创建广告系列失败: ${error.message}`, error);
+      // 提取 Google Ads API 错误详情
+      let errorMessage = error.message || 'Unknown error';
+      if (error.errors && error.errors.length > 0) {
+        const firstError = error.errors[0];
+        console.error('Google Ads API Error Details:', JSON.stringify(firstError, null, 2));
+        if (firstError.message) {
+          errorMessage = firstError.message;
+        } else if (firstError.error_code) {
+          errorMessage = `Error code: ${JSON.stringify(firstError.error_code)}`;
+        }
+      }
+      throw new GoogleAdsError(`创建广告系列失败: ${errorMessage}`, error);
+    }
+  }
+
+  /**
+   * 创建广告组
+   */
+  async createAdGroup(customerId: string, adGroupData: {
+    name: string;
+    campaign_id: string;
+    cpc_bid_micros?: number;
+    status?: string;
+  }): Promise<any> {
+    try {
+      const customer = await this.getCustomer(customerId);
+
+      const campaignResourceName = `customers/${customerId}/campaigns/${adGroupData.campaign_id}`;
+
+      const operations: MutateOperation<any>[] = [
+        {
+          entity: 'ad_group',
+          operation: 'create',
+          resource: {
+            name: adGroupData.name,
+            campaign: campaignResourceName,
+            status: adGroupData.status || enums.AdGroupStatus.ENABLED,
+            cpc_bid_micros: adGroupData.cpc_bid_micros || toMicros(1), // 默认 $1
+          },
+        },
+      ];
+
+      const result = await customer.mutateResources(operations);
+      return result;
+    } catch (error: any) {
+      throw new GoogleAdsError(`创建广告组失败: ${error.message}`, error);
+    }
+  }
+
+  /**
+   * 添加关键词
+   */
+  async addKeywords(customerId: string, adGroupId: string, keywords: Array<{
+    text: string;
+    match_type?: string;
+  }>): Promise<any> {
+    try {
+      const customer = await this.getCustomer(customerId);
+
+      const adGroupResourceName = `customers/${customerId}/adGroups/${adGroupId}`;
+
+      const operations: MutateOperation<any>[] = keywords.map((keyword) => ({
+        entity: 'ad_group_criterion',
+        operation: 'create',
+        resource: {
+          ad_group: adGroupResourceName,
+          keyword: {
+            text: keyword.text,
+            match_type: keyword.match_type || enums.KeywordMatchType.BROAD,
+          },
+          status: enums.AdGroupCriterionStatus.ENABLED,
+        },
+      }));
+
+      const result = await customer.mutateResources(operations);
+      return result;
+    } catch (error: any) {
+      throw new GoogleAdsError(`添加关键词失败: ${error.message}`, error);
+    }
+  }
+
+  /**
+   * 删除广告系列
+   */
+  async deleteCampaign(customerId: string, campaignId: string): Promise<any> {
+    try {
+      const customer = await this.getCustomer(customerId);
+
+      const resourceName = `customers/${customerId}/campaigns/${campaignId}`;
+
+      const operations: MutateOperation<any>[] = [
+        {
+          entity: 'campaign',
+          operation: 'remove',
+          resource_name: resourceName,
+          resource: {},
+        },
+      ];
+
+      const result = await customer.mutateResources(operations);
+      return result;
+    } catch (error: any) {
+      throw new GoogleAdsError(`删除广告系列失败: ${error.message}`, error);
+    }
+  }
+
+  /**
+   * 删除广告组
+   */
+  async deleteAdGroup(customerId: string, adGroupId: string): Promise<any> {
+    try {
+      const customer = await this.getCustomer(customerId);
+
+      const resourceName = `customers/${customerId}/adGroups/${adGroupId}`;
+
+      const operations: MutateOperation<any>[] = [
+        {
+          entity: 'ad_group',
+          operation: 'remove',
+          resource_name: resourceName,
+          resource: {},
+        },
+      ];
+
+      const result = await customer.mutateResources(operations);
+      return result;
+    } catch (error: any) {
+      throw new GoogleAdsError(`删除广告组失败: ${error.message}`, error);
+    }
+  }
+
+  /**
+   * 删除关键词
+   */
+  async deleteKeyword(customerId: string, adGroupId: string, criterionId: string): Promise<any> {
+    try {
+      const customer = await this.getCustomer(customerId);
+
+      const resourceName = `customers/${customerId}/adGroupCriteria/${adGroupId}~${criterionId}`;
+
+      const operations: MutateOperation<any>[] = [
+        {
+          entity: 'ad_group_criterion',
+          operation: 'remove',
+          resource_name: resourceName,
+          resource: {},
+        },
+      ];
+
+      const result = await customer.mutateResources(operations);
+      return result;
+    } catch (error: any) {
+      throw new GoogleAdsError(`删除关键词失败: ${error.message}`, error);
     }
   }
 
@@ -411,9 +594,21 @@ export class GoogleAdsClient {
     try {
       const customer = await this.getCustomer(customerId);
 
-      // 使用 mutateResources 更新（待实现）
-      // TODO: 实现完整的 mutateResources 操作
-      throw new Error('updateCampaignStatus 方法待实现');
+      const resourceName = `customers/${customerId}/campaigns/${campaignId}`;
+
+      const operations: MutateOperation<any>[] = [
+        {
+          entity: 'campaign',
+          operation: 'update',
+          resource_name: resourceName,
+          resource: {
+            status: status,
+          },
+        },
+      ];
+
+      const result = await customer.mutateResources(operations);
+      return result;
     } catch (error: any) {
       throw new GoogleAdsError(`更新广告系列失败: ${error.message}`, error);
     }
