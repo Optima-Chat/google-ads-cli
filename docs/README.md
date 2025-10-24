@@ -4,7 +4,24 @@
 
 ## 📚 核心文档
 
-### 1. [技术设计](technical-design.md) ⭐ 必读
+### 1. [使用示例](EXAMPLES.md) 🚀 新用户必读
+
+**完整的使用指南和实战示例**
+
+- 📋 准备工作（获取 API 凭据）
+- ⚡ 快速开始（安装、配置、登录）
+- 💼 账号管理示例
+- 📊 广告系列管理示例
+- 🔑 关键词分析示例
+- 🔍 GAQL 高级查询示例
+- 🤖 在 AI 中使用（Claude Code 示例）
+- 📝 脚本集成示例
+
+**适合**: 所有用户，特别是首次使用者
+
+---
+
+### 2. [技术设计](technical-design.md) ⭐ 开发者必读
 
 **最新的完整技术方案**
 
@@ -19,7 +36,7 @@
 
 ---
 
-### 2. [架构决策](architecture-decision.md) 📋
+### 3. [架构决策](architecture-decision.md) 📋
 
 **为什么选择直接调用 API**
 
@@ -32,7 +49,7 @@
 
 ---
 
-### 3. [gaql-cli 参考分析](gaql-cli-reference.md) 🔍
+### 4. [gaql-cli 参考分析](gaql-cli-reference.md) 🔍
 
 **从 gaql-cli 项目学到什么**
 
@@ -49,6 +66,9 @@
 
 ### 我想...
 
+- **快速上手使用** → [使用示例](EXAMPLES.md)
+- **查看实战案例** → [使用示例 - GAQL 查询](EXAMPLES.md#gaql-高级查询)
+- **在 AI 中使用** → [使用示例 - AI 集成](EXAMPLES.md#在-ai-中使用)
 - **了解整体架构** → [技术设计 - 架构设计](technical-design.md#架构设计)
 - **看开发计划** → [技术设计 - 开发路线图](technical-design.md#开发路线图更新)
 - **理解为什么不用 MCP** → [架构决策](architecture-decision.md)
