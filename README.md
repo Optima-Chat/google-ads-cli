@@ -2,6 +2,8 @@
 
 > 用自然语言管理 Google Ads 广告投放 - 专为 Claude Code 设计的对话式 CLI 工具
 
+[![npm version](https://img.shields.io/npm/v/@optima-chat/google-ads-cli.svg)](https://www.npmjs.com/package/@optima-chat/google-ads-cli)
+[![npm downloads](https://img.shields.io/npm/dm/@optima-chat/google-ads-cli.svg)](https://www.npmjs.com/package/@optima-chat/google-ads-cli)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -123,9 +125,11 @@ google-ads query "
 - [x] 关键词管理命令（keyword list）
 - [x] GAQL 查询支持（query）
 - [x] Google Ads Client 封装
+- [x] 集成测试（100% 通过）
+- [x] 发布到 NPM（当前版本 v0.1.1）
+- [x] GitHub Actions 自动化发布
 - [ ] 更多命令（创建、更新、删除等）
 - [ ] 单元测试
-- [ ] 发布到 NPM
 
 ## 相关项目
 
@@ -140,6 +144,26 @@ google-ads query "
 - **交互提示**: inquirer
 - **配置管理**: conf
 - **开发工具**: TypeScript + tsx
+
+## 发布流程
+
+本项目使用 GitHub Actions 自动发布到 NPM：
+
+```bash
+# 更新版本号（patch/minor/major）
+npm version patch
+
+# 推送 tag 触发自动发布
+git push --follow-tags
+```
+
+GitHub Actions 会自动：
+- 运行测试和构建
+- 发布到 NPM
+- 创建 GitHub Release
+- 生成 changelog
+
+查看最新发布：https://github.com/Optima-Chat/google-ads-cli/releases
 
 ## 贡献
 
