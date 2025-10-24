@@ -1,3 +1,15 @@
+# 架构决策记录
+
+> **最终决策**: ✅ 选择方案 B（直接调用 Google Ads API）
+>
+> **决策日期**: 2025-10-24
+>
+> **决策理由**: 为长远计，保持系统架构简洁优美
+>
+> **架构**: Claude Code → CLI → Google Ads API (2 层)
+
+---
+
 # 架构方案对比：MCP Server vs 直接调用 Google Ads API
 
 ## 两种架构方案
