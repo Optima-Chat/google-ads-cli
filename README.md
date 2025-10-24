@@ -30,11 +30,14 @@ google-ads auth login
 # 查看账号列表
 google-ads account list
 
-# 创建广告系列
-google-ads campaign create --product-id 123 --budget 100
+# 查看广告系列（替换 YOUR_CUSTOMER_ID）
+google-ads campaign list -c YOUR_CUSTOMER_ID
+
+# 查看关键词
+google-ads keyword list -c YOUR_CUSTOMER_ID --limit 20
 
 # 执行 GAQL 查询（高级功能）
-google-ads query "SELECT campaign.id, campaign.name FROM campaign"
+google-ads query -c YOUR_CUSTOMER_ID -q "SELECT campaign.id, campaign.name FROM campaign" --pretty
 ```
 
 ## 架构
@@ -51,26 +54,32 @@ Claude Code / AI CLI
 
 ## 命令概览
 
+### 基础命令
+- `google-ads init` - 初始化配置
+- `google-ads config show` - 查看配置
+- `google-ads config set <key> <value>` - 设置配置
+- `google-ads --version` - 查看版本
+- `google-ads --help` - 查看帮助
+
+### 认证管理 (`google-ads auth`)
+- `login` - OAuth2 登录
+- `logout` - 退出登录
+- `status` - 查看认证状态
+
 ### 账号管理 (`google-ads account`)
-- `list` - 账号列表
-- `status <id>` - 账号状态
-- `billing <id>` - 账单信息
-- `invite <id>` - 邀请用户
+- `list [--json]` - 列出可访问的账号
+- `info <customer-id> [--json]` - 查看账号详情
 
 ### 广告系列 (`google-ads campaign`)
-- `create` - 创建广告系列
-- `list` - 系列列表
-- `update <id>` - 更新系列
-- `pause <id>` - 暂停系列
-- `resume <id>` - 恢复系列
-- `delete <id>` - 删除系列
+- `list -c <customer-id> [--status <status>] [--limit <n>] [--json]` - 列出广告系列
+- `info -c <customer-id> <campaign-id> [--json]` - 查看广告系列详情
 
 ### 关键词 (`google-ads keyword`)
-- `add <ad-group-id>` - 添加关键词
-- `research` - 关键词研究（AI 驱动）
-- `list <ad-group-id>` - 关键词列表
-- `update <id>` - 更新关键词
-- `delete <id>` - 删除关键词
+- `list -c <customer-id> [--campaign-id <id>] [--status <status>] [--limit <n>] [--json]` - 列出关键词
+
+### GAQL 查询 (`google-ads query`)
+- `query -c <customer-id> -q "<gaql>" [--json] [--pretty]` - 执行 GAQL 查询
+- `query -c <customer-id> -f <file> [--json] [--pretty]` - 从文件执行查询
 
 查看 [完整命令文档](docs/technical-design.md) 了解更多。
 
@@ -103,14 +112,20 @@ google-ads query "
 
 ## 开发状态
 
-🚧 **项目处于早期开发阶段**
+🎉 **核心功能已实现**
 
 - [x] 技术方案设计
 - [x] 架构决策（直接 API 调用）
-- [ ] OAuth2 认证实现
-- [ ] 核心命令实现
-- [ ] GAQL 查询支持
-- [ ] 测试和文档
+- [x] OAuth2 认证实现（login/logout/status）
+- [x] 配置管理（init/config）
+- [x] 账号管理命令（account list/info）
+- [x] 广告系列命令（campaign list/info）
+- [x] 关键词管理命令（keyword list）
+- [x] GAQL 查询支持（query）
+- [x] Google Ads Client 封装
+- [ ] 更多命令（创建、更新、删除等）
+- [ ] 单元测试
+- [ ] 发布到 NPM
 
 ## 相关项目
 

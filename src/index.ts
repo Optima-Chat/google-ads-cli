@@ -12,6 +12,11 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { initCommand } from './commands/init.js';
 import { configCommand } from './commands/config.js';
+import { authCommand } from './commands/auth/index.js';
+import { accountCommand } from './commands/account/index.js';
+import { campaignCommand } from './commands/campaign/index.js';
+import { keywordCommand } from './commands/keyword/index.js';
+import { queryCommand } from './commands/query.js';
 
 // 获取版本号
 const __filename = fileURLToPath(import.meta.url);
@@ -30,6 +35,11 @@ program
 // 注册命令
 program.addCommand(initCommand);
 program.addCommand(configCommand);
+program.addCommand(authCommand);
+program.addCommand(accountCommand);
+program.addCommand(campaignCommand);
+program.addCommand(keywordCommand);
+program.addCommand(queryCommand);
 
 // 默认动作（显示欢迎信息）
 program.action(() => {
