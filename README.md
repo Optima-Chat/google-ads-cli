@@ -21,7 +21,7 @@
 
 ```bash
 # 安装
-npm install -g @optima-chat/google-ads-cli
+npm install -g @optima-chat/google-ads-cli@latest
 
 # 初始化配置（交互式引导）
 google-ads init
