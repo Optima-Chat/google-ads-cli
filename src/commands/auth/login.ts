@@ -8,9 +8,8 @@ import open from 'open';
 import ora from 'ora';
 import { OAuth2Manager } from '../../lib/oauth2-manager.js';
 import { CallbackServer } from '../../lib/callback-server.js';
-import { saveToken, getCredentialsPath } from '../../lib/token-store.js';
-import { configExists } from '../../utils/config.js';
-import { success, error as logError, info } from '../../utils/logger.js';
+import { updateEnvFile } from '../../utils/env-updater.js';
+import { success, info } from '../../utils/logger.js';
 import { handleError } from '../../utils/errors.js';
 
 export const loginCommand = new Command('login')
@@ -19,12 +18,6 @@ export const loginCommand = new Command('login')
   .option('--no-open', '不自动打开浏览器')
   .action(async (options) => {
     try {
-      // 检查配置
-      if (!configExists()) {
-        logError('配置文件不存在，请先运行: google-ads init');
-        process.exit(1);
-      }
-
       console.log(chalk.cyan.bold('\n🔐 正在启动 OAuth2 认证...\n'));
 
       const oauth = new OAuth2Manager();
@@ -82,9 +75,11 @@ export const loginCommand = new Command('login')
         const token = await oauth.exchangeCodeForToken(code, redirectUri);
         spinner.succeed('Access Token 已获取');
 
-        // 6. 保存 token
-        saveToken(token);
-        success(`Refresh Token 已保存到: ${getCredentialsPath()}`);
+        // 6. 保存 refresh token 到 .env 文件
+        if (token.refresh_token) {
+          updateEnvFile('GOOGLE_ADS_REFRESH_TOKEN', token.refresh_token);
+          success('Refresh Token 已保存到 .env 文件');
+        }
       } catch (error: any) {
         spinner.fail('获取 Token 失败');
         await server.close();

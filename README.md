@@ -35,16 +35,19 @@
 # 安装
 npm install -g @optima-chat/google-ads-cli@latest
 
-# 查看完整设置指南（包含获取 Developer Token、OAuth2 凭据的详细步骤）
-google-ads init --help
+# 1. 复制环境变量模板
+cp .env.example .env
 
-# 初始化配置（会交互式引导输入 Developer Token、Client ID、Client Secret）
-google-ads init
+# 2. 编辑 .env 文件，填入以下信息：
+#    - GOOGLE_ADS_DEVELOPER_TOKEN（从 https://ads.google.com/aw/apicenter 获取）
+#    - GOOGLE_ADS_CLIENT_ID（从 https://console.cloud.google.com 获取）
+#    - GOOGLE_ADS_CLIENT_SECRET（从 https://console.cloud.google.com 获取）
+#    - GOOGLE_ADS_CUSTOMER_ID（你的 MCC 管理账号 ID）
 
-# OAuth2 登录授权（会自动打开浏览器）
+# 3. OAuth2 登录授权（会自动打开浏览器，授权后 refresh token 自动保存到 .env）
 google-ads auth login
 
-# 验证配置
+# 4. 验证配置
 google-ads account list
 ```
 
@@ -103,12 +106,42 @@ google-ads query -c <CUSTOMER_ID> \
 - 为多个客户创建和管理独立的广告账号
 - 架构简洁优美，为长远计
 
+## 配置说明
+
+本工具采用**纯环境变量配置**，符合 12-factor app 最佳实践。
+
+### 环境变量
+
+在项目根目录创建 `.env` 文件（或设置系统环境变量）：
+
+```bash
+# MCC 管理账号 ID
+GOOGLE_ADS_CUSTOMER_ID=your-mcc-account-id
+
+# Developer Token（从 https://ads.google.com/aw/apicenter 获取）
+GOOGLE_ADS_DEVELOPER_TOKEN=your-developer-token
+
+# OAuth2 客户端凭据（从 https://console.cloud.google.com 获取）
+GOOGLE_ADS_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_ADS_CLIENT_SECRET=your-client-secret
+
+# OAuth2 Refresh Token（通过 google-ads auth login 自动获取）
+GOOGLE_ADS_REFRESH_TOKEN=your-refresh-token
+```
+
+### 获取凭据
+
+1. **创建 MCC 账号**：访问 https://ads.google.com
+2. **获取 Developer Token**：访问 https://ads.google.com/aw/apicenter
+3. **配置 OAuth2**：
+   - 访问 https://console.cloud.google.com
+   - 创建项目并启用 Google Ads API
+   - 创建 OAuth 2.0 客户端 ID（桌面应用类型）
+   - 获取 Client ID 和 Client Secret
+
 ## 命令概览
 
 ### 基础命令
-- `google-ads init` - 初始化配置
-- `google-ads config show` - 查看配置
-- `google-ads config set <key> <value>` - 设置配置
 - `google-ads --version` - 查看版本
 - `google-ads --help` - 查看帮助
 
@@ -180,8 +213,7 @@ google-ads query "
 - [x] 技术方案设计
 - [x] 架构决策（直接 API 调用）
 - [x] OAuth2 认证实现（login/logout/status）
-- [x] 配置管理（init/config）
-- [x] 服务提供商设置指南（集成在 `init --help` 中）
+- [x] 纯环境变量配置（符合 12-factor app）
 - [x] 账号管理命令（account list/info/check/create）
 - [x] 广告系列命令（campaign list/info/create/delete）
 - [x] 广告组命令（ad-group list/create/delete）

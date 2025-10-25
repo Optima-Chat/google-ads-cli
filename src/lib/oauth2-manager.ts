@@ -5,7 +5,7 @@
 import axios from 'axios';
 import { OAuth2Token } from '../config.js';
 import { loadConfig } from '../utils/config.js';
-import { loadToken, saveToken, isTokenExpired } from './token-store.js';
+import { loadToken, isTokenExpired } from './token-store.js';
 import { AuthError } from '../utils/errors.js';
 
 // Google OAuth2 端点
@@ -121,7 +121,7 @@ export class OAuth2Manager {
     // 如果过期，刷新 token
     try {
       const newToken = await this.refreshAccessToken(token.refresh_token);
-      saveToken(newToken);
+      // refresh_token 保存在环境变量中，只需返回新的 access_token
       return newToken.access_token;
     } catch (error) {
       throw new AuthError('Token 已过期且刷新失败，请重新登录: google-ads auth login');

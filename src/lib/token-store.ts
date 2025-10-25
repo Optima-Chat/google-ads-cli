@@ -1,64 +1,35 @@
 /**
- * Token Store - OAuth2 Token 存储和管理
+ * Token Store - OAuth2 Token 存储和管理（环境变量方式）
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from 'fs';
-import { join } from 'path';
-import { OAuth2Token, CREDENTIALS_FILE } from '../config.js';
-import { getConfigDir } from '../utils/config.js';
+import { OAuth2Token } from '../config.js';
 
 /**
- * 获取凭据文件路径
+ * 加载 token（从环境变量）
  */
-export function getCredentialsPath(): string {
-  return join(getConfigDir(), CREDENTIALS_FILE);
+export function loadToken(): OAuth2Token | null {
+  const refreshToken = process.env.GOOGLE_ADS_REFRESH_TOKEN;
+
+  if (!refreshToken) {
+    return null;
+  }
+
+  // 从环境变量构建 token 对象
+  // access_token 会在使用时通过 refresh_token 获取
+  return {
+    access_token: '', // 将在 OAuth2Manager 中刷新获取
+    refresh_token: refreshToken,
+    expires_at: 0, // 需要刷新
+    scope: 'https://www.googleapis.com/auth/adwords',
+    token_type: 'Bearer',
+  };
 }
 
 /**
  * 检查是否已有 token
  */
 export function hasToken(): boolean {
-  return existsSync(getCredentialsPath());
-}
-
-/**
- * 加载 token
- */
-export function loadToken(): OAuth2Token | null {
-  if (!hasToken()) {
-    return null;
-  }
-
-  try {
-    const data = readFileSync(getCredentialsPath(), 'utf-8');
-    return JSON.parse(data);
-  } catch (error) {
-    return null;
-  }
-}
-
-/**
- * 保存 token
- */
-export function saveToken(token: OAuth2Token): void {
-  const configDir = getConfigDir();
-
-  // 确保目录存在
-  if (!existsSync(configDir)) {
-    mkdirSync(configDir, { recursive: true });
-  }
-
-  // 写入 token
-  writeFileSync(getCredentialsPath(), JSON.stringify(token, null, 2), 'utf-8');
-}
-
-/**
- * 删除 token
- */
-export function deleteToken(): void {
-  if (hasToken()) {
-    unlinkSync(getCredentialsPath());
-  }
+  return !!process.env.GOOGLE_ADS_REFRESH_TOKEN;
 }
 
 /**
