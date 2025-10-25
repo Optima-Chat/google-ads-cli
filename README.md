@@ -35,13 +35,13 @@
 # 安装
 npm install -g @optima-chat/google-ads-cli@latest
 
-# 查看完整设置指南
-google-ads setup
+# 查看完整设置指南（包含获取 Developer Token、OAuth2 凭据的详细步骤）
+google-ads init --help
 
-# 初始化 OAuth2 凭据（需要 Developer Token、Client ID、Client Secret）
+# 初始化配置（会交互式引导输入 Developer Token、Client ID、Client Secret）
 google-ads init
 
-# OAuth2 登录授权
+# OAuth2 登录授权（会自动打开浏览器）
 google-ads auth login
 
 # 验证配置
@@ -181,7 +181,7 @@ google-ads query "
 - [x] 架构决策（直接 API 调用）
 - [x] OAuth2 认证实现（login/logout/status）
 - [x] 配置管理（init/config）
-- [x] 服务提供商设置指南（setup）
+- [x] 服务提供商设置指南（集成在 `init --help` 中）
 - [x] 账号管理命令（account list/info/check/create）
 - [x] 广告系列命令（campaign list/info/create/delete）
 - [x] 广告组命令（ad-group list/create/delete）
@@ -192,7 +192,8 @@ google-ads query "
 - [x] 发布到 NPM（当前版本 v0.2.0）
 - [x] GitHub Actions 自动化发布
 - [ ] 客户账号创建 API 实现（当前为手动指引）
-- [ ] 更多命令（广告文案、效果分析等）
+- [ ] 广告文案管理命令
+- [ ] 效果分析和报表命令
 - [ ] 单元测试
 
 ## 相关项目

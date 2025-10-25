@@ -10,7 +10,6 @@ import chalk from 'chalk';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { setupCommand } from './commands/setup.js';
 import { initCommand } from './commands/init.js';
 import { configCommand } from './commands/config.js';
 import { authCommand } from './commands/auth/index.js';
@@ -35,7 +34,6 @@ program
   .version(VERSION);
 
 // 注册命令
-program.addCommand(setupCommand);
 program.addCommand(initCommand);
 program.addCommand(configCommand);
 program.addCommand(authCommand);
@@ -51,22 +49,20 @@ program.action(() => {
   console.log(chalk.white('为客户创建和管理 Google Ads 广告的专业工具'));
   console.log(chalk.gray('服务提供商使用本工具为客户管理广告系列、关键词和广告内容\n'));
 
-  console.log(chalk.green('🚀 服务提供商快速开始:'));
-  console.log(chalk.gray('   0. 新手? 查看设置指南: ') + chalk.cyan('google-ads setup'));
-  console.log(chalk.gray('   1. 初始化 OAuth2 凭据: ') + chalk.cyan('google-ads init'));
-  console.log(chalk.gray('   2. 登录授权: ') + chalk.cyan('google-ads auth login'));
-  console.log(chalk.gray('   3. 为客户创建账号: ') + chalk.cyan('google-ads account create --merchant-id <ID> ...'));
-  console.log(chalk.gray('   4. 检查客户账号状态: ') + chalk.cyan('google-ads account check -c <CUSTOMER_ID>'));
-  console.log(chalk.gray('   5. 为客户创建广告系列: ') + chalk.cyan('google-ads campaign create -c <CUSTOMER_ID> ...') + chalk.gray('\n'));
+  console.log(chalk.green('🚀 首次使用（服务提供商一次性配置）:'));
+  console.log(chalk.gray('   1. 初始化配置: ') + chalk.cyan('google-ads init --help') + chalk.gray(' (查看详细说明)'));
+  console.log(chalk.gray('   2. 运行初始化: ') + chalk.cyan('google-ads init'));
+  console.log(chalk.gray('   3. OAuth2 登录: ') + chalk.cyan('google-ads auth login') + chalk.gray('\n'));
 
-  console.log(chalk.white('💡 提示:'));
-  console.log(chalk.gray('   - 服务提供商只需配置一次 OAuth2 凭据'));
-  console.log(chalk.gray('   - 使用您的凭据为多个客户创建和管理广告账号'));
-  console.log(chalk.gray('   - 查看所有命令: ') + chalk.cyan('google-ads --help') + chalk.gray('\n'));
+  console.log(chalk.green('📋 为客户管理广告:'));
+  console.log(chalk.gray('   1. 创建客户账号: ') + chalk.cyan('google-ads account create --help'));
+  console.log(chalk.gray('   2. 检查账号状态: ') + chalk.cyan('google-ads account check -c <CUSTOMER_ID>'));
+  console.log(chalk.gray('   3. 创建广告系列: ') + chalk.cyan('google-ads campaign create -c <CUSTOMER_ID> ...'));
+  console.log(chalk.gray('   4. 查看所有命令: ') + chalk.cyan('google-ads --help') + chalk.gray('\n'));
 
-  console.log(chalk.white('🔗 了解更多:'));
+  console.log(chalk.white('🔗 文档:'));
   console.log(chalk.gray('   GitHub: https://github.com/Optima-Chat/google-ads-cli'));
-  console.log(chalk.gray('   文档: https://github.com/Optima-Chat/google-ads-cli/tree/main/docs\n'));
+  console.log(chalk.gray('   README: https://github.com/Optima-Chat/google-ads-cli#readme\n'));
 });
 
 // 解析命令行参数
