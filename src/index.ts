@@ -48,14 +48,22 @@ program.addCommand(queryCommand);
 // 默认动作（显示欢迎信息）
 program.action(() => {
   console.log(chalk.cyan.bold(`\n✨ Google Ads CLI v${VERSION}\n`));
-  console.log(chalk.white('用自然语言管理 Google Ads 广告投放 - 专为 Claude Code 设计\n'));
-  console.log(chalk.green('🚀 快速开始:'));
+  console.log(chalk.white('为客户创建和管理 Google Ads 广告的专业工具'));
+  console.log(chalk.gray('服务提供商使用本工具为客户管理广告系列、关键词和广告内容\n'));
+
+  console.log(chalk.green('🚀 服务提供商快速开始:'));
   console.log(chalk.gray('   0. 新手? 查看设置指南: ') + chalk.cyan('google-ads setup'));
-  console.log(chalk.gray('   1. 初始化: ') + chalk.cyan('google-ads init'));
-  console.log(chalk.gray('   2. 登录: ') + chalk.cyan('google-ads auth login'));
-  console.log(chalk.gray('   3. 查看账号: ') + chalk.cyan('google-ads account list'));
-  console.log(chalk.gray('   4. 检查账号配置: ') + chalk.cyan('google-ads account check -c <CUSTOMER_ID>'));
-  console.log(chalk.gray('   5. 查看所有命令: ') + chalk.cyan('google-ads --help') + chalk.gray('\n'));
+  console.log(chalk.gray('   1. 初始化 OAuth2 凭据: ') + chalk.cyan('google-ads init'));
+  console.log(chalk.gray('   2. 登录授权: ') + chalk.cyan('google-ads auth login'));
+  console.log(chalk.gray('   3. 为客户创建账号: ') + chalk.cyan('google-ads account create --merchant-id <ID> ...'));
+  console.log(chalk.gray('   4. 检查客户账号状态: ') + chalk.cyan('google-ads account check -c <CUSTOMER_ID>'));
+  console.log(chalk.gray('   5. 为客户创建广告系列: ') + chalk.cyan('google-ads campaign create -c <CUSTOMER_ID> ...') + chalk.gray('\n'));
+
+  console.log(chalk.white('💡 提示:'));
+  console.log(chalk.gray('   - 服务提供商只需配置一次 OAuth2 凭据'));
+  console.log(chalk.gray('   - 使用您的凭据为多个客户创建和管理广告账号'));
+  console.log(chalk.gray('   - 查看所有命令: ') + chalk.cyan('google-ads --help') + chalk.gray('\n'));
+
   console.log(chalk.white('🔗 了解更多:'));
   console.log(chalk.gray('   GitHub: https://github.com/Optima-Chat/google-ads-cli'));
   console.log(chalk.gray('   文档: https://github.com/Optima-Chat/google-ads-cli/tree/main/docs\n'));

@@ -6,7 +6,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 
 export const setupCommand = new Command('setup')
-  .description('显示 Google Ads CLI 完整设置指南')
+  .description('显示服务提供商设置指南（一次性配置）')
   .option('--step <number>', '显示特定步骤的详细信息 (1-5)')
   .action((options) => {
     if (options.step) {
@@ -17,15 +17,17 @@ export const setupCommand = new Command('setup')
   });
 
 function showFullGuide() {
-  console.log(chalk.cyan.bold('\n📋 Google Ads CLI 设置指南\n'));
+  console.log(chalk.cyan.bold('\n📋 服务提供商设置指南（一次性配置）\n'));
+  console.log(chalk.gray('本指南用于服务提供商初始化 CLI 工具'));
+  console.log(chalk.gray('完成后可以使用 CLI 为客户创建和管理 Google Ads 账号\n'));
 
   // Step 1: Google Ads Account
-  console.log(chalk.green.bold('步骤 1: 创建 Google Ads 账号'));
-  console.log(chalk.gray('   如果还没有 Google Ads 账号：'));
+  console.log(chalk.green.bold('步骤 1: 创建服务提供商 Google Ads 账号'));
+  console.log(chalk.gray('   如果还没有服务提供商账号（MCC 管理账号）：'));
   console.log(chalk.white('   1. 访问: ') + chalk.cyan('https://ads.google.com'));
-  console.log(chalk.white('   2. 使用 Google 账号登录'));
-  console.log(chalk.white('   3. 按照向导完成账号创建'));
-  console.log(chalk.yellow('   💡 提示: 创建账号时需要提供企业信息和支付方式\n'));
+  console.log(chalk.white('   2. 使用企业 Google 账号登录'));
+  console.log(chalk.white('   3. 创建 MCC 管理账号（用于管理多个客户账号）'));
+  console.log(chalk.yellow('   💡 提示: MCC 账号可以集中管理所有客户的广告账号\n'));
 
   // Step 2: Developer Token
   console.log(chalk.green.bold('步骤 2: 获取 Developer Token'));
@@ -52,20 +54,16 @@ function showFullGuide() {
   console.log(chalk.cyan('   google-ads auth login'));
   console.log(chalk.gray('   会自动打开浏览器完成授权\n'));
 
-  // Step 6: Billing Setup
-  console.log(chalk.green.bold('步骤 6: 配置账单信息'));
-  console.log(chalk.white('   1. 访问: ') + chalk.cyan('https://ads.google.com/aw/billing'));
-  console.log(chalk.white('   2. 添加付款方式（信用卡/银行账户）'));
-  console.log(chalk.white('   3. 设置每日预算限额'));
-  console.log(chalk.yellow('   ⚠️  重要: 必须配置账单才能创建和运行广告系列\n'));
-
   // Verification
   console.log(chalk.green.bold('✅ 验证配置'));
   console.log(chalk.cyan('   google-ads account list'));
-  console.log(chalk.gray('   查看可访问的账号列表\n'));
+  console.log(chalk.gray('   查看可访问的账号列表（应该能看到你的 MCC 账号）\n'));
 
-  console.log(chalk.cyan('   google-ads account check -c <CUSTOMER_ID>'));
-  console.log(chalk.gray('   检查账号配置状态和账单状态\n'));
+  // Next Steps
+  console.log(chalk.green.bold('🎯 为客户创建账号'));
+  console.log(chalk.gray('   完成服务提供商配置后，可以为客户创建 Google Ads 账号：'));
+  console.log(chalk.cyan('   google-ads account create --merchant-id <客户ID>'));
+  console.log(chalk.gray('   然后为客户创建广告系列、添加关键词等\n'));
 
   // Quick Links
   console.log(chalk.white.bold('🔗 快速链接'));
