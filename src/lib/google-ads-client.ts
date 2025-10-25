@@ -423,7 +423,11 @@ export class GoogleAdsClient {
             manual_cpc: {
               enhanced_cpc_enabled: false,
             },
-            contains_eu_political_advertising: false,
+            // EU 政治广告合规声明（必需字段，从 2025 年 9 月开始强制要求）
+            contains_eu_political_advertising: enums.EuPoliticalAdvertisingStatus.DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING,
+            network_settings: {
+              target_google_search: true,
+            },
           },
         },
       ];
