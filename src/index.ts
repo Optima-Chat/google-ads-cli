@@ -20,6 +20,7 @@ import { campaignCommand } from './commands/campaign/index.js';
 import { adGroupCommand } from './commands/ad-group/index.js';
 import { keywordCommand } from './commands/keyword/index.js';
 import { queryCommand } from './commands/query.js';
+import { configCommand } from './commands/config.js';
 
 // 获取版本号
 const __filename = fileURLToPath(import.meta.url);
@@ -42,26 +43,36 @@ program.addCommand(campaignCommand);
 program.addCommand(adGroupCommand);
 program.addCommand(keywordCommand);
 program.addCommand(queryCommand);
+program.addCommand(configCommand);
 
 // 默认动作（显示欢迎信息）
 program.action(() => {
   console.log(chalk.cyan.bold(`\n✨ Google Ads CLI v${VERSION}\n`));
-  console.log(chalk.white('为客户创建和管理 Google Ads 广告的专业工具'));
-  console.log(chalk.gray('服务提供商使用本工具为客户管理广告系列、关键词和广告内容\n'));
+  console.log(chalk.white('管理您的 Google Ads 广告投放'));
+  console.log(chalk.gray('专为 Claude Code 设计的 CLI 工具\n'));
 
-  console.log(chalk.green('🚀 配置（服务提供商一次性设置）:'));
-  console.log(chalk.gray('   1. 复制 .env.example 为 .env'));
-  console.log(chalk.gray('   2. 填入 Developer Token、Client ID、Client Secret'));
-  console.log(chalk.gray('   3. 运行: ') + chalk.cyan('google-ads auth login') + chalk.gray(' (OAuth2 授权)'));
-  console.log(chalk.gray('   4. 授权成功后，refresh token 会自动保存到 .env\n'));
+  console.log(chalk.green('🚀 首次使用:'));
+  console.log(chalk.white('   步骤 1: 配置 Agency 凭据'));
+  console.log(chalk.gray('      • 复制 .env.example 为 .env'));
+  console.log(chalk.gray('      • 填入 Agency 提供的凭据（Developer Token, OAuth2, MCC ID）'));
+  console.log(chalk.gray('      • 运行: ') + chalk.cyan('google-ads auth login\n'));
 
-  console.log(chalk.green('📋 为客户管理广告:'));
-  console.log(chalk.gray('   • 创建客户账号: ') + chalk.cyan('google-ads account create --help'));
-  console.log(chalk.gray('   • 检查账号状态: ') + chalk.cyan('google-ads account check -c <CUSTOMER_ID>'));
-  console.log(chalk.gray('   • 创建广告系列: ') + chalk.cyan('google-ads campaign create -c <CUSTOMER_ID> ...'));
+  console.log(chalk.white('   步骤 2: 创建您的账号'));
+  console.log(chalk.gray('      • 运行: ') + chalk.cyan('google-ads account create --email <your-email> --name <your-name>'));
+  console.log(chalk.gray('      • 检查邮箱接受邀请'));
+  console.log(chalk.gray('      • 设置账单信息\n'));
+
+  console.log(chalk.green('📋 日常使用:'));
+  console.log(chalk.gray('   • 检查账号状态: ') + chalk.cyan('google-ads account check'));
+  console.log(chalk.gray('   • 查看广告系列: ') + chalk.cyan('google-ads campaign list'));
+  console.log(chalk.gray('   • 创建广告系列: ') + chalk.cyan('google-ads campaign create -n "广告系列名称" -b 10'));
   console.log(chalk.gray('   • 查看所有命令: ') + chalk.cyan('google-ads --help') + chalk.gray('\n'));
 
-  console.log(chalk.white('📖 文档和获取凭据:'));
+  console.log(chalk.white('⚙️  配置管理:'));
+  console.log(chalk.gray('   • 查看当前配置: ') + chalk.cyan('google-ads config show'));
+  console.log(chalk.gray('   • 重置配置: ') + chalk.cyan('google-ads config reset\n'));
+
+  console.log(chalk.white('📖 文档:'));
   console.log(chalk.gray('   README: https://github.com/Optima-Chat/google-ads-cli#readme\n'));
 });
 

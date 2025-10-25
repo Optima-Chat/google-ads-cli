@@ -8,10 +8,10 @@ import ora from 'ora';
 import { toMicros } from 'google-ads-api';
 import { GoogleAdsClient } from '../../lib/google-ads-client.js';
 import { handleError } from '../../utils/errors.js';
+import { getCustomerId } from '../../utils/customer-id.js';
 
 export const createCommand = new Command('create')
   .description('创建广告系列')
-  .requiredOption('-c, --customer-id <id>', '客户账号 ID')
   .requiredOption('-n, --name <name>', '广告系列名称')
   .requiredOption('-b, --budget <amount>', '每日预算（美元）', parseFloat)
   .option('--status <status>', '状态 (ENABLED, PAUSED)', 'PAUSED')
@@ -20,12 +20,13 @@ export const createCommand = new Command('create')
     const spinner = ora('创建广告系列...').start();
 
     try {
+      const customerId = getCustomerId();
       const client = new GoogleAdsClient();
 
       // 转换预算为 micros
       const budgetMicros = toMicros(options.budget);
 
-      const result = await client.createCampaign(options.customerId, {
+      const result = await client.createCampaign(customerId, {
         name: options.name,
         budget_amount_micros: budgetMicros,
         status: options.status,
@@ -49,7 +50,7 @@ export const createCommand = new Command('create')
             if (match) {
               console.log(chalk.gray('Campaign ID:'), chalk.cyan(match[1]));
               console.log(chalk.gray('\n💡 下一步: 创建广告组'));
-              console.log(chalk.cyan(`   google-ads ad-group create -c ${options.customerId} --campaign-id ${match[1]} -n "广告组名称"`));
+              console.log(chalk.cyan(`   google-ads ad-group create --campaign-id ${match[1]} -n "广告组名称"`));
             }
           }
         }

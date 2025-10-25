@@ -8,23 +8,24 @@ import ora from 'ora';
 import Table from 'cli-table3';
 import { GoogleAdsClient } from '../../lib/google-ads-client.js';
 import { handleError } from '../../utils/errors.js';
+import { getCustomerId } from '../../utils/customer-id.js';
 
 export const checkCommand = new Command('check')
   .description('检查账号配置状态（账单、权限等）')
-  .requiredOption('-c, --customer-id <id>', '客户账号 ID')
   .option('--json', '以 JSON 格式输出')
   .action(async (options) => {
     const spinner = ora('检查账号状态...').start();
 
     try {
+      const customerId = getCustomerId();
       const client = new GoogleAdsClient();
 
       // Get basic customer info
-      const customerInfo = await client.getCustomerInfo(options.customerId);
+      const customerInfo = await client.getCustomerInfo(customerId);
 
       if (!customerInfo) {
         spinner.fail('账号不存在');
-        console.log(chalk.red(`\n✗ 无法找到账号 ${options.customerId}`));
+        console.log(chalk.red(`\n✗ 无法找到账号 ${customerId}`));
         return;
       }
 
@@ -45,7 +46,7 @@ export const checkCommand = new Command('check')
       let canCreateCampaigns = false;
 
       try {
-        const billingResults = await client.query(options.customerId, billingQuery);
+        const billingResults = await client.query(customerId, billingQuery);
         if (billingResults.length > 0) {
           const billing = billingResults[0].billing_setup;
           billingStatus = billing.status || 'UNKNOWN';
@@ -66,7 +67,7 @@ export const checkCommand = new Command('check')
 
       if (options.json) {
         const result = {
-          customer_id: options.customerId,
+          customer_id: customerId,
           customer_info: {
             name: customerInfo.descriptive_name,
             currency: customerInfo.currency_code,
@@ -114,7 +115,7 @@ export const checkCommand = new Command('check')
 
         // Customer info
         table.push(
-          [chalk.gray('账号 ID'), chalk.white(options.customerId)],
+          [chalk.gray('账号 ID'), chalk.white(customerId)],
           [chalk.gray('账号名称'), chalk.white(customerInfo.descriptive_name || '未命名')],
           [chalk.gray('货币'), chalk.white(customerInfo.currency_code)],
           [chalk.gray('时区'), chalk.white(customerInfo.time_zone)],
@@ -193,7 +194,7 @@ export const checkCommand = new Command('check')
         } else {
           console.log(chalk.green('✅ 账号配置完成，可以开始创建广告系列！\n'));
           console.log(chalk.gray('快速开始:'));
-          console.log(chalk.cyan(`   google-ads campaign create -c ${options.customerId} -n "我的广告系列" -b 10\n`));
+          console.log(chalk.cyan(`   google-ads campaign create -n "我的广告系列" -b 10\n`));
         }
       }
     } catch (error) {

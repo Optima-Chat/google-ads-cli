@@ -9,20 +9,21 @@ import ora from 'ora';
 import { GoogleAdsClient } from '../../lib/google-ads-client.js';
 import { handleError } from '../../utils/errors.js';
 import { error as logError } from '../../utils/logger.js';
+import { getCustomerId } from '../../utils/customer-id.js';
 
 export const infoCommand = new Command('info')
   .description('查看广告系列详情')
-  .requiredOption('-c, --customer-id <id>', '客户账号 ID')
   .argument('<campaign-id>', '广告系列 ID')
   .option('--json', '以 JSON 格式输出')
   .action(async (campaignId: string, options) => {
     try {
+      const customerId = getCustomerId();
       const client = new GoogleAdsClient();
 
       const spinner = ora('正在获取广告系列信息...').start();
 
       // 获取广告系列详情
-      const campaign = await client.getCampaign(options.customerId, campaignId);
+      const campaign = await client.getCampaign(customerId, campaignId);
       spinner.stop();
 
       if (!campaign) {

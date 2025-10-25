@@ -9,21 +9,22 @@ import ora from 'ora';
 import { GoogleAdsClient } from '../../lib/google-ads-client.js';
 import { handleError } from '../../utils/errors.js';
 import { warn } from '../../utils/logger.js';
+import { getCustomerId } from '../../utils/customer-id.js';
 
 export const listCommand = new Command('list')
   .description('列出广告系列')
-  .requiredOption('-c, --customer-id <id>', '客户账号 ID')
   .option('--status <status>', '按状态过滤 (ENABLED/PAUSED/REMOVED)')
   .option('--limit <number>', '限制返回数量', '50')
   .option('--json', '以 JSON 格式输出')
   .action(async (options) => {
     try {
+      const customerId = getCustomerId();
       const client = new GoogleAdsClient();
 
       const spinner = ora('正在获取广告系列列表...').start();
 
       // 获取广告系列列表
-      const campaigns = await client.listCampaigns(options.customerId, {
+      const campaigns = await client.listCampaigns(customerId, {
         status: options.status,
         limit: parseInt(options.limit),
       });
