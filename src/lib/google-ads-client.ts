@@ -60,7 +60,11 @@ export class GoogleAdsClient {
       const results = await customer.query(gaqlQuery);
       return results;
     } catch (error: any) {
-      throw new GoogleAdsError(`查询失败: ${error.message}`, error);
+      const errorMessage = error.message
+        || error.details
+        || (error.errors && JSON.stringify(error.errors))
+        || JSON.stringify(error);
+      throw new GoogleAdsError(`查询失败: ${errorMessage}`, error);
     }
   }
 
@@ -615,6 +619,92 @@ export class GoogleAdsClient {
       return result;
     } catch (error: any) {
       throw new GoogleAdsError(`更新广告系列失败: ${error.message}`, error);
+    }
+  }
+
+  /**
+   * 发送 MCC 关联邀请
+   * 从 Manager Account (MCC) 向客户账号发送关联邀请
+   *
+   * @param clientCustomerId 客户账号的 Customer ID
+   * @returns manager_link_id 用于客户接受邀请
+   */
+  async sendLinkInvitation(clientCustomerId: string): Promise<string> {
+    try {
+      // 使用 MCC 账号发送邀请
+      const managerCustomerId = this.config.loginCustomerId;
+      if (!managerCustomerId) {
+        throw new GoogleAdsError(
+          '未配置 MCC 管理账号 ID\n' +
+          '请在 .env 文件中设置 GOOGLE_ADS_MANAGER_ACCOUNT_ID'
+        );
+      }
+
+      const manager = await this.getCustomer(managerCustomerId);
+
+      // 先检查是否已存在关联
+      const existingQuery = `
+        SELECT
+          customer_client_link.client_customer,
+          customer_client_link.manager_link_id,
+          customer_client_link.status
+        FROM customer_client_link
+        WHERE customer_client_link.client_customer = 'customers/${clientCustomerId}'
+      `;
+
+      const existingLinks = await manager.query(existingQuery);
+      if (existingLinks.length > 0) {
+        const existingLink = existingLinks[0]?.customer_client_link;
+        if (existingLink?.manager_link_id) {
+          // 已存在关联，返回现有的 manager_link_id
+          return `existing:${existingLink.manager_link_id}`;
+        }
+      }
+
+      // 直接调用底层的 CustomerClientLinkService
+      // 注意：封装的 customerClientLinks.create 方法有 bug，需要直接调用 gRPC 服务
+      const service = (manager as any).loadService('CustomerClientLinkServiceClient');
+
+      const operation = {
+        create: {
+          client_customer: `customers/${clientCustomerId}`,
+          status: enums.ManagerLinkStatus.PENDING,
+        },
+      };
+
+      const request = {
+        customer_id: managerCustomerId,
+        operation: operation,
+      };
+
+      const [response] = await service.mutateCustomerClientLink(request, {
+        otherArgs: {
+          headers: {
+            'developer-token': this.config.developerToken,
+            'login-customer-id': managerCustomerId,
+          },
+        },
+      });
+
+      // 从 resource_name 提取 manager_link_id
+      // 格式: customers/{manager_id}/customerClientLinks/{client_id}~{manager_link_id}
+      const resourceName = response?.result?.resource_name;
+      if (!resourceName) {
+        throw new GoogleAdsError('创建关联成功但未返回 resource_name');
+      }
+
+      const match = resourceName.match(/~(\d+)$/);
+      const managerLinkId = match ? match[1] : 'unknown';
+
+      return managerLinkId;
+
+    } catch (error: any) {
+      // 提取更详细的错误信息
+      const errorMessage = error.message
+        || error.details
+        || (error.errors && JSON.stringify(error.errors))
+        || JSON.stringify(error);
+      throw new GoogleAdsError(`发送关联邀请失败: ${errorMessage}`, error);
     }
   }
 }

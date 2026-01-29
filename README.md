@@ -52,23 +52,50 @@ google-ads auth login
 
 ### 步骤 2：创建您的 Google Ads 账号
 
+#### 方式 1: 非交互式模式（推荐 AI/自动化使用）
+
 ```bash
-# 创建账号（需要提供您的 Google 邮箱）
+# 一次性提供所有参数（无需交互）
+google-ads account create \
+  --email your@gmail.com \
+  --name "Your Company Name" \
+  --customer-id 1234567890 \
+  --json
+
+# Customer ID 从哪里来？
+# 1. 访问 https://ads.google.com/
+# 2. 用 Gmail 登录，切换到"专家模式"
+# 3. 创建账号（不创建广告系列）
+# 4. 记录 Customer ID（10位数字）
+```
+
+#### 方式 2: 交互式模式（人类用户）
+
+```bash
+# 运行命令，CLI 会引导你创建账号
 google-ads account create --email your@gmail.com --name "Your Company Name"
 
-# 该命令会：
+# CLI 会：
 # 1. 显示手动创建步骤（引导在 Google Ads UI 中操作）
-# 2. 提示输入创建的 Customer ID
+# 2. 交互式提示输入 Customer ID
 # 3. 自动保存配置到 CLI config
+```
 
-# 完成创建后：
-# - 检查邮箱中的 Google Ads 邀请邮件
-# - 点击邮件中的链接接受邀请
-# - 登录 Google Ads 设置账单信息
+#### 完成创建后
 
+```bash
 # 验证账号配置
 google-ads account check
 ```
+
+**下一步**：
+- 检查邮箱中的 Google Ads 邀请邮件
+- 点击邮件中的链接接受邀请
+- 登录 Google Ads 设置账单信息
+
+**详细教程**：
+- 客户创建账号：`docs/客户创建账号指南.md`
+- AI 使用指南：`docs/AI-使用指南.md`
 
 ### 步骤 3：管理您的广告
 

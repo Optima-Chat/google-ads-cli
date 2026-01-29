@@ -32,7 +32,7 @@ export function loadConfig(): GoogleAdsConfig {
     developerToken,
     clientId,
     clientSecret,
-    loginCustomerId: process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID,
+    loginCustomerId: (process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID || process.env.GOOGLE_ADS_MANAGER_ACCOUNT_ID)?.replace(/-/g, ''),
     defaultCustomerId: process.env.GOOGLE_ADS_CUSTOMER_ID,
     outputFormat: (process.env.GOOGLE_ADS_OUTPUT_FORMAT as any) || 'table',
     colorOutput: process.env.GOOGLE_ADS_COLOR_OUTPUT !== 'false',

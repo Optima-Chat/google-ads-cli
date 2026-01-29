@@ -8,6 +8,7 @@ import ora from 'ora';
 import Conf from 'conf';
 import inquirer from 'inquirer';
 import { handleError } from '../../utils/errors.js';
+import { GoogleAdsClient } from '../../lib/google-ads-client.js';
 
 const config = new Conf({ projectName: 'google-ads-cli' });
 
@@ -15,6 +16,7 @@ export const createCommand = new Command('create')
   .description('创建您的 Google Ads 账号（首次使用）')
   .requiredOption('--email <email>', '您的 Google 账号邮箱（用于接收邀请）')
   .requiredOption('--name <name>', '账号名称（您的公司或品牌名称）')
+  .option('--customer-id <id>', 'Customer ID（10位数字，如 1234567890 或 123-456-7890）')
   .option('--currency <code>', '货币代码（如 USD, CNY）', 'USD')
   .option('--timezone <timezone>', '时区（如 Asia/Shanghai, America/New_York）', 'America/New_York')
   .option('--json', '以 JSON 格式输出')
@@ -48,49 +50,74 @@ export const createCommand = new Command('create')
       // 需要调用 google-ads-api 的 CustomerService.createCustomerClient
       // 然后调用 CustomerUserAccessInvitationService 发送邀请
 
-      console.log(chalk.yellow('\n⚠️  注意: 账号创建 API 功能正在开发中\n'));
+      let customerId: string;
 
-      console.log(chalk.cyan.bold('📋 手动创建步骤:\n'));
+      // 检查是否通过命令行参数提供了 Customer ID（非交互式模式）
+      if (options.customerId) {
+        // 非交互式模式：验证并使用提供的 Customer ID
+        spinner.stop();
 
-      console.log(chalk.white('步骤 1: 访问 MCC 管理控制台'));
-      console.log(chalk.gray('   URL: ') + chalk.cyan('https://ads.google.com'));
-      console.log(chalk.gray('   使用 MCC 账号登录\n'));
+        const providedId = options.customerId.replace(/-/g, '');
 
-      console.log(chalk.white('步骤 2: 创建子账号'));
-      console.log(chalk.gray('   • 点击 "账号" → "子账号"'));
-      console.log(chalk.gray('   • 点击 "+" 创建新账号'));
-      console.log(chalk.gray(`   • 账号名称: ${chalk.white(options.name)}`));
-      console.log(chalk.gray(`   • 货币: ${chalk.white(options.currency)}`));
-      console.log(chalk.gray(`   • 时区: ${chalk.white(options.timezone)}\n`));
+        // 验证格式
+        if (!/^\d{10}$/.test(providedId)) {
+          throw new Error(
+            '无效的 Customer ID 格式\n' +
+            '请提供 10 位数字的 Customer ID（可带或不带连字符）\n' +
+            '例如: 1234567890 或 123-456-7890'
+          );
+        }
 
-      console.log(chalk.white('步骤 3: 发送访问邀请'));
-      console.log(chalk.gray('   • 在新创建的账号页面，点击 "访问权限"'));
-      console.log(chalk.gray('   • 点击 "+" 添加用户'));
-      console.log(chalk.gray(`   • 输入邮箱: ${chalk.cyan(options.email)}`));
-      console.log(chalk.gray('   • 选择 "管理员" 权限（可设置账单）\n'));
+        customerId = providedId;
 
-      console.log(chalk.white('步骤 4: 记录 Customer ID 并保存到配置'));
-      console.log(chalk.gray('   创建完成后，请输入新账号的 Customer ID\n'));
+        if (!options.json) {
+          console.log(chalk.green('✅ Customer ID 验证通过\n'));
+        }
+      } else {
+        // 交互式模式：显示手动创建步骤并询问
+        console.log(chalk.yellow('\n⚠️  注意: 账号创建 API 功能正在开发中\n'));
 
-      // 提示用户输入 Customer ID
-      const answers = await inquirer.prompt([
-        {
-          type: 'input',
-          name: 'customerId',
-          message: '请输入新创建的 Customer ID（格式：123-456-7890 或 1234567890）:',
-          validate: (input: string) => {
-            // 移除连字符
-            const clean = input.replace(/-/g, '');
-            // 验证是否为 10 位数字
-            if (!/^\d{10}$/.test(clean)) {
-              return '请输入有效的 Customer ID（10 位数字）';
-            }
-            return true;
+        console.log(chalk.cyan.bold('📋 手动创建步骤:\n'));
+
+        console.log(chalk.white('步骤 1: 访问 Google Ads 官网'));
+        console.log(chalk.gray('   URL: ') + chalk.cyan('https://ads.google.com'));
+        console.log(chalk.gray('   使用客户的 Gmail 登录\n'));
+
+        console.log(chalk.white('步骤 2: 切换到专家模式'));
+        console.log(chalk.gray('   • 在页面底部找到 "切换到专家模式"'));
+        console.log(chalk.gray('   • 点击 "创建账号而不创建广告系列"\n'));
+
+        console.log(chalk.white('步骤 3: 填写账号信息'));
+        console.log(chalk.gray(`   • 账号名称: ${chalk.white(options.name)}`));
+        console.log(chalk.gray(`   • 货币: ${chalk.white(options.currency)} (创建后不可修改)`));
+        console.log(chalk.gray(`   • 时区: ${chalk.white(options.timezone)}\n`));
+
+        console.log(chalk.white('步骤 4: 完成创建并记录 Customer ID'));
+        console.log(chalk.gray('   创建成功后，页面会显示 Customer ID\n'));
+
+        console.log(chalk.cyan('📚 详细图文教程:'));
+        console.log(chalk.gray('   docs/客户创建账号指南.md\n'));
+
+        // 交互式提示用户输入 Customer ID
+        const answers = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'customerId',
+            message: '请输入新创建的 Customer ID（格式：123-456-7890 或 1234567890）:',
+            validate: (input: string) => {
+              // 移除连字符
+              const clean = input.replace(/-/g, '');
+              // 验证是否为 10 位数字
+              if (!/^\d{10}$/.test(clean)) {
+                return '请输入有效的 Customer ID（10 位数字）';
+              }
+              return true;
+            },
           },
-        },
-      ]);
+        ]);
 
-      const customerId = answers.customerId.replace(/-/g, '');
+        customerId = answers.customerId.replace(/-/g, '');
+      }
 
       // 保存到 config
       config.set('customerId', customerId);
@@ -103,6 +130,36 @@ export const createCommand = new Command('create')
       console.log(chalk.green('\n✅ 配置已保存！\n'));
 
       const formattedCustomerId = customerId.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+
+      // 尝试发送 MCC 关联邀请
+      if (!options.json) {
+        console.log(chalk.cyan('📤 正在发送 MCC 关联邀请...\n'));
+      }
+
+      try {
+        const client = new GoogleAdsClient();
+        const managerLinkId = await client.sendLinkInvitation(customerId);
+
+        if (options.json) {
+          // JSON 模式下记录成功但不打断输出
+        } else if (managerLinkId.startsWith('existing:')) {
+          // 已存在关联
+          const linkId = managerLinkId.replace('existing:', '');
+          console.log(chalk.green('✅ MCC 关联已存在！\n'));
+          console.log(chalk.gray(`Manager Link ID: ${linkId}\n`));
+        } else {
+          // 新创建的关联
+          console.log(chalk.green('✅ MCC 关联邀请已发送！\n'));
+          console.log(chalk.gray(`Manager Link ID: ${managerLinkId}\n`));
+        }
+      } catch (error: any) {
+        // 发送邀请失败不影响账号配置
+        if (!options.json) {
+          console.log(chalk.yellow('⚠️  发送 MCC 关联邀请失败\n'));
+          console.log(chalk.gray(`原因: ${error.message}\n`));
+          console.log(chalk.gray('您可以稍后在 Google Ads UI 中手动接受关联邀请\n'));
+        }
+      }
 
       if (options.json) {
         const result = {
