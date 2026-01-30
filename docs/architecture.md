@@ -181,6 +181,44 @@ Token 存储在 `~/.optima/token.json`，格式如下：
 | stage | auth.stage.optima.onl | ads-api.stage.optima.onl |
 | prod | auth.optima.onl | ads-api.optima.onl |
 
+### Commerce Backend 集成
+
+CLI 启动时会自动从 commerce-backend 获取商户的 Google Ads Customer ID：
+
+```
+┌─────────────┐                    ┌──────────────────┐
+│     CLI     │                    │ commerce-backend │
+└──────┬──────┘                    └────────┬─────────┘
+       │                                    │
+       │  1. GET /api/merchants/me          │
+       │    Authorization: Bearer <token>   │
+       │───────────────────────────────────>│
+       │                                    │
+       │  2. { google_ads_customer_id, name }
+       │<───────────────────────────────────│
+       │                                    │
+       │  3. 保存到本地配置                   │
+       │    ~/.config/google-ads-cli/       │
+       ▼                                    ▼
+```
+
+**流程说明**：
+
+1. CLI 启动时调用 `fetchOptimaConfig()`
+2. 使用 `~/.optima/token.json` 中的 token 调用 commerce-backend
+3. 获取商户的 `google_ads_customer_id` 字段
+4. 缓存到本地配置 `~/.config/google-ads-cli/config.json`
+
+**Commerce Backend 端**：
+
+商户的 Google Ads Customer ID 存储在 `merchant_profiles` 表的 `google_ads_customer_id` 字段中。
+
+| 环境 | Commerce API URL |
+|------|------------------|
+| ci | api.optima.chat |
+| stage | api.stage.optima.onl |
+| prod | api.optima.onl |
+
 ---
 
 ## Backend 架构 (@optima-chat/ads-backend)
