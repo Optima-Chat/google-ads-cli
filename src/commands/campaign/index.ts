@@ -6,6 +6,7 @@ import { Command } from 'commander';
 import { listCommand } from './list.js';
 import { infoCommand } from './info.js';
 import { createCommand } from './create.js';
+import { updateCommand } from './update.js';
 import { deleteCommand } from './delete.js';
 
 export const campaignCommand = new Command('campaign')
@@ -13,4 +14,5 @@ export const campaignCommand = new Command('campaign')
   .addCommand(listCommand)
   .addCommand(infoCommand)
   .addCommand(createCommand)
+  .addCommand(updateCommand)
   .addCommand(deleteCommand);

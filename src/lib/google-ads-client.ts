@@ -193,6 +193,50 @@ export class GoogleAdsClient {
   }
 
   /**
+   * 列出广告组
+   */
+  async listAdGroups(customerId: string, campaignId?: string, options?: {
+    status?: string;
+    limit?: number;
+  }): Promise<any[]> {
+    let query = `
+      SELECT
+        ad_group.id,
+        ad_group.name,
+        ad_group.status,
+        ad_group.type,
+        ad_group.cpc_bid_micros,
+        campaign.id,
+        campaign.name,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros,
+        metrics.conversions,
+        metrics.ctr
+      FROM ad_group
+    `;
+
+    const conditions: string[] = [];
+    if (campaignId) {
+      conditions.push(`campaign.id = ${campaignId}`);
+    }
+    if (options?.status) {
+      conditions.push(`ad_group.status = '${options.status}'`);
+    } else {
+      // 默认不显示已删除的广告组
+      conditions.push(`ad_group.status != 'REMOVED'`);
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += ` LIMIT ${options?.limit || 100}`;
+
+    return this.query(customerId, query);
+  }
+
+  /**
    * 列出关键词
    */
   async listKeywords(customerId: string, campaignId?: string, options?: {
@@ -241,62 +285,6 @@ export class GoogleAdsClient {
     return await this.query(customerId, query);
   }
 
-  /**
-   * 获取广告文案
-   */
-  async listAds(customerId: string, campaignId?: string, options?: {
-    status?: string;
-    adType?: string;
-    limit?: number;
-  }): Promise<any[]> {
-    let query = `
-      SELECT
-        ad_group_ad.ad.id,
-        ad_group_ad.ad.type,
-        ad_group_ad.ad.expanded_text_ad.headline_part1,
-        ad_group_ad.ad.expanded_text_ad.headline_part2,
-        ad_group_ad.ad.expanded_text_ad.headline_part3,
-        ad_group_ad.ad.expanded_text_ad.description,
-        ad_group_ad.ad.expanded_text_ad.description2,
-        ad_group_ad.ad.responsive_search_ad.headlines,
-        ad_group_ad.ad.responsive_search_ad.descriptions,
-        ad_group_ad.ad.final_urls,
-        ad_group_ad.status,
-        ad_group.id,
-        ad_group.name,
-        campaign.id,
-        campaign.name,
-        metrics.impressions,
-        metrics.clicks,
-        metrics.cost_micros,
-        metrics.conversions,
-        metrics.ctr
-      FROM ad_group_ad
-    `;
-
-    const conditions: string[] = [];
-    if (campaignId) {
-      conditions.push(`campaign.id = ${campaignId}`);
-    }
-    if (options?.status) {
-      conditions.push(`ad_group_ad.status = '${options.status}'`);
-    }
-    if (options?.adType) {
-      conditions.push(`ad_group_ad.ad.type = '${options.adType}'`);
-    }
-
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
-    }
-
-    query += ' ORDER BY metrics.impressions DESC';
-
-    if (options?.limit) {
-      query += ` LIMIT ${options.limit}`;
-    }
-
-    return await this.query(customerId, query);
-  }
 
   /**
    * 获取效果数据
@@ -566,21 +554,203 @@ export class GoogleAdsClient {
   }
 
   /**
+   * 更新关键词（状态、出价）
+   */
+  async updateKeyword(customerId: string, adGroupId: string, criterionId: string, updateData: {
+    status?: string;
+    cpcBidMicros?: number;
+  }): Promise<any> {
+    try {
+      const customer = await this.getCustomer(customerId);
+      const resourceName = `customers/${customerId}/adGroupCriteria/${adGroupId}~${criterionId}`;
+
+      const resource: any = { resource_name: resourceName };
+      if (updateData.status) {
+        resource.status = updateData.status;
+      }
+      if (updateData.cpcBidMicros) {
+        resource.cpc_bid_micros = updateData.cpcBidMicros;
+      }
+
+      const operations: MutateOperation<any>[] = [
+        {
+          entity: 'ad_group_criterion',
+          operation: 'update',
+          resource: resource,
+        },
+      ];
+
+      const result = await customer.mutateResources(operations);
+      return result;
+    } catch (error: any) {
+      const errorMessage = error.message || error.details || (error.errors && JSON.stringify(error.errors)) || JSON.stringify(error);
+      throw new GoogleAdsError(`更新关键词失败: ${errorMessage}`, error);
+    }
+  }
+
+  /**
    * 更新广告系列状态
    */
   async updateCampaignStatus(customerId: string, campaignId: string, status: 'ENABLED' | 'PAUSED' | 'REMOVED'): Promise<any> {
+    return this.updateCampaign(customerId, campaignId, { status });
+  }
+
+  /**
+   * 更新广告系列（支持状态、名称、预算）
+   */
+  async updateCampaign(customerId: string, campaignId: string, updateData: {
+    status?: string;
+    name?: string;
+    budgetAmountMicros?: number;
+  }): Promise<any> {
     try {
       const customer = await this.getCustomer(customerId);
 
       const resourceName = `customers/${customerId}/campaigns/${campaignId}`;
+      const resource: any = {};
+
+      if (updateData.status) {
+        resource.status = updateData.status;
+      }
+      if (updateData.name) {
+        resource.name = updateData.name;
+      }
+
+      // 如果需要更新预算，需要先获取当前广告系列的预算资源
+      if (updateData.budgetAmountMicros) {
+        // 首先获取广告系列的预算信息
+        const campaignQuery = `
+          SELECT campaign.campaign_budget
+          FROM campaign
+          WHERE campaign.id = ${campaignId}
+        `;
+        const campaignResult = await customer.query(campaignQuery);
+        if (campaignResult.length === 0) {
+          throw new GoogleAdsError('找不到广告系列');
+        }
+
+        const budgetResourceName = campaignResult[0].campaign?.campaign_budget;
+        if (budgetResourceName) {
+          // 更新预算
+          const budgetOperations: MutateOperation<any>[] = [
+            {
+              entity: 'campaign_budget',
+              operation: 'update',
+              resource: {
+                resource_name: budgetResourceName,
+                amount_micros: updateData.budgetAmountMicros,
+              },
+            },
+          ];
+          await customer.mutateResources(budgetOperations);
+        }
+      }
+
+      // 如果有状态或名称更新
+      if (Object.keys(resource).length > 0) {
+        resource.resource_name = resourceName;
+        const operations: MutateOperation<any>[] = [
+          {
+            entity: 'campaign',
+            operation: 'update',
+            resource: resource,
+          },
+        ];
+        const result = await customer.mutateResources(operations);
+        return result;
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      const errorMessage = error.message || error.details || (error.errors && JSON.stringify(error.errors)) || JSON.stringify(error);
+      throw new GoogleAdsError(`更新广告系列失败: ${errorMessage}`, error);
+    }
+  }
+
+  /**
+   * 列出广告
+   */
+  async listAds(customerId: string, options?: {
+    campaignId?: string;
+    adGroupId?: string;
+    status?: string;
+    limit?: number;
+  }): Promise<any[]> {
+    let query = `
+      SELECT
+        ad_group_ad.ad.id,
+        ad_group_ad.ad.type,
+        ad_group_ad.ad.final_urls,
+        ad_group_ad.ad.responsive_search_ad.headlines,
+        ad_group_ad.ad.responsive_search_ad.descriptions,
+        ad_group_ad.ad.responsive_search_ad.path1,
+        ad_group_ad.ad.responsive_search_ad.path2,
+        ad_group_ad.status,
+        ad_group_ad.policy_summary.approval_status,
+        ad_group.id,
+        ad_group.name,
+        campaign.id,
+        campaign.name,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros,
+        metrics.conversions
+      FROM ad_group_ad
+    `;
+
+    const conditions: string[] = [];
+    if (options?.campaignId) {
+      conditions.push(`campaign.id = ${options.campaignId}`);
+    }
+    if (options?.adGroupId) {
+      conditions.push(`ad_group.id = ${options.adGroupId}`);
+    }
+    if (options?.status) {
+      conditions.push(`ad_group_ad.status = '${options.status}'`);
+    } else {
+      conditions.push(`ad_group_ad.status != 'REMOVED'`);
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += ` LIMIT ${options?.limit || 100}`;
+
+    return this.query(customerId, query);
+  }
+
+  /**
+   * 创建响应式搜索广告 (RSA)
+   */
+  async createAd(customerId: string, adData: {
+    adGroupId: string;
+    headlines: string[];
+    descriptions: string[];
+    finalUrl: string;
+    path1?: string;
+    path2?: string;
+    status?: string;
+  }): Promise<any> {
+    try {
+      const customer = await this.getCustomer(customerId);
 
       const operations: MutateOperation<any>[] = [
         {
-          entity: 'campaign',
-          operation: 'update',
-          resource_name: resourceName,
+          entity: 'ad_group_ad',
+          operation: 'create',
           resource: {
-            status: status,
+            ad_group: `customers/${customerId}/adGroups/${adData.adGroupId}`,
+            status: adData.status === 'ENABLED' ? enums.AdGroupAdStatus.ENABLED : enums.AdGroupAdStatus.PAUSED,
+            ad: {
+              responsive_search_ad: {
+                headlines: adData.headlines.map(text => ({ text })),
+                descriptions: adData.descriptions.map(text => ({ text })),
+                path1: adData.path1,
+                path2: adData.path2,
+              },
+              final_urls: [adData.finalUrl],
+            },
           },
         },
       ];
@@ -588,7 +758,23 @@ export class GoogleAdsClient {
       const result = await customer.mutateResources(operations);
       return result;
     } catch (error: any) {
-      throw new GoogleAdsError(`更新广告系列失败: ${error.message}`, error);
+      const errorMessage = error.message || error.details || (error.errors && JSON.stringify(error.errors)) || JSON.stringify(error);
+      throw new GoogleAdsError(`创建广告失败: ${errorMessage}`, error);
+    }
+  }
+
+  /**
+   * 删除广告
+   */
+  async deleteAd(customerId: string, adGroupId: string, adId: string): Promise<any> {
+    try {
+      const customer = await this.getCustomer(customerId);
+      const resourceName = `customers/${customerId}/adGroupAds/${adGroupId}~${adId}`;
+      const result = await customer.adGroupAds.remove([resourceName]);
+      return result;
+    } catch (error: any) {
+      const errorMessage = error.message || error.details || (error.errors && JSON.stringify(error.errors)) || JSON.stringify(error);
+      throw new GoogleAdsError(`删除广告失败: ${errorMessage}`, error);
     }
   }
 
