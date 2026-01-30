@@ -762,6 +762,43 @@ export class GoogleAdsService {
   // ============ Campaign Targeting Operations ============
 
   /**
+   * Query geo target constant names by IDs
+   */
+  async getGeoTargetConstantNames(
+    customerId: string,
+    geoTargetIds: string[],
+  ): Promise<Map<string, string>> {
+    if (geoTargetIds.length === 0) {
+      return new Map();
+    }
+
+    const idsString = geoTargetIds.join(', ');
+    const query = `
+      SELECT
+        geo_target_constant.id,
+        geo_target_constant.name,
+        geo_target_constant.country_code
+      FROM geo_target_constant
+      WHERE geo_target_constant.id IN (${idsString})
+    `;
+
+    const results = await this.query(customerId, query);
+    const nameMap = new Map<string, string>();
+
+    for (const row of results as Array<{
+      geo_target_constant?: { id?: number; name?: string; country_code?: string };
+    }>) {
+      const id = row.geo_target_constant?.id;
+      const name = row.geo_target_constant?.name;
+      if (id !== undefined && name) {
+        nameMap.set(String(id), name);
+      }
+    }
+
+    return nameMap;
+  }
+
+  /**
    * List campaign targeting criteria
    */
   async listCampaignCriteria(
@@ -795,7 +832,42 @@ export class GoogleAdsService {
       WHERE campaign.id = ${campaignId}
     `;
 
-    return this.query(customerId, query);
+    const results = await this.query(customerId, query);
+
+    // Collect geo target constant IDs from location criteria
+    const geoTargetIds: string[] = [];
+    for (const row of results as Array<{
+      campaign_criterion?: { location?: { geo_target_constant?: string } };
+    }>) {
+      const geoTargetConstant = row.campaign_criterion?.location?.geo_target_constant;
+      if (geoTargetConstant) {
+        // Extract ID from resource name like "geoTargetConstants/2840"
+        const id = geoTargetConstant.split('/').pop();
+        if (id) {
+          geoTargetIds.push(id);
+        }
+      }
+    }
+
+    // Batch query geo target constant names
+    const geoNameMap = await this.getGeoTargetConstantNames(customerId, geoTargetIds);
+
+    // Enrich results with geo target constant names
+    for (const row of results as Array<{
+      campaign_criterion?: {
+        location?: { geo_target_constant?: string; geo_target_constant_name?: string };
+      };
+    }>) {
+      const geoTargetConstant = row.campaign_criterion?.location?.geo_target_constant;
+      if (geoTargetConstant && row.campaign_criterion?.location) {
+        const id = geoTargetConstant.split('/').pop();
+        if (id) {
+          row.campaign_criterion.location.geo_target_constant_name = geoNameMap.get(id);
+        }
+      }
+    }
+
+    return results;
   }
 
   /**
