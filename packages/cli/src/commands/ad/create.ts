@@ -5,7 +5,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
-import { GoogleAdsClient } from '../../lib/google-ads-client.js';
+import { getApiClient } from '../../lib/api-client.js';
 import { handleError } from '../../utils/errors.js';
 import { getCustomerId } from '../../utils/customer-id.js';
 
@@ -24,7 +24,7 @@ export const createCommand = new Command('create')
 
     try {
       const customerId = getCustomerId();
-      const client = new GoogleAdsClient();
+      const client = getApiClient();
 
       // 解析标题和描述
       const headlines = options.headlines.split(',').map((h: string) => h.trim());

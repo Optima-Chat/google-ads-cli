@@ -5,7 +5,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
-import { GoogleAdsClient } from '../../lib/google-ads-client.js';
+import { getApiClient } from '../../lib/api-client.js';
 import { handleError } from '../../utils/errors.js';
 import { getCustomerId } from '../../utils/customer-id.js';
 
@@ -26,7 +26,7 @@ export const updateCommand = new Command('update')
 
     try {
       const customerId = getCustomerId();
-      const client = new GoogleAdsClient();
+      const client = getApiClient();
 
       const updateData: any = {};
       if (options.status) {

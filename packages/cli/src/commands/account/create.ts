@@ -8,7 +8,6 @@ import ora from 'ora';
 import Conf from 'conf';
 import inquirer from 'inquirer';
 import { handleError } from '../../utils/errors.js';
-import { GoogleAdsClient } from '../../lib/google-ads-client.js';
 
 const config = new Conf({ projectName: 'google-ads-cli' });
 
@@ -35,20 +34,7 @@ export const createCommand = new Command('create')
         return;
       }
 
-      // 检查 MCC 凭据
-      const managerAccountId = process.env.GOOGLE_ADS_MANAGER_ACCOUNT_ID;
-      if (!managerAccountId) {
-        throw new Error(
-          '缺少 GOOGLE_ADS_MANAGER_ACCOUNT_ID 环境变量\n' +
-            '请在 .env 文件中配置 Agency 的 MCC 管理账号 ID'
-        );
-      }
-
       spinner.info('账号创建功能开发中');
-
-      // TODO: 实现账号创建 API 调用
-      // 需要调用 google-ads-api 的 CustomerService.createCustomerClient
-      // 然后调用 CustomerUserAccessInvitationService 发送邀请
 
       let customerId: string;
 
@@ -130,36 +116,6 @@ export const createCommand = new Command('create')
       console.log(chalk.green('\n✅ 配置已保存！\n'));
 
       const formattedCustomerId = customerId.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
-
-      // 尝试发送 MCC 关联邀请
-      if (!options.json) {
-        console.log(chalk.cyan('📤 正在发送 MCC 关联邀请...\n'));
-      }
-
-      try {
-        const client = new GoogleAdsClient();
-        const managerLinkId = await client.sendLinkInvitation(customerId);
-
-        if (options.json) {
-          // JSON 模式下记录成功但不打断输出
-        } else if (managerLinkId.startsWith('existing:')) {
-          // 已存在关联
-          const linkId = managerLinkId.replace('existing:', '');
-          console.log(chalk.green('✅ MCC 关联已存在！\n'));
-          console.log(chalk.gray(`Manager Link ID: ${linkId}\n`));
-        } else {
-          // 新创建的关联
-          console.log(chalk.green('✅ MCC 关联邀请已发送！\n'));
-          console.log(chalk.gray(`Manager Link ID: ${managerLinkId}\n`));
-        }
-      } catch (error: any) {
-        // 发送邀请失败不影响账号配置
-        if (!options.json) {
-          console.log(chalk.yellow('⚠️  发送 MCC 关联邀请失败\n'));
-          console.log(chalk.gray(`原因: ${error.message}\n`));
-          console.log(chalk.gray('您可以稍后在 Google Ads UI 中手动接受关联邀请\n'));
-        }
-      }
 
       if (options.json) {
         const result = {

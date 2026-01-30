@@ -1,29 +1,35 @@
 /**
  * Auth Logout Command - 退出登录
+ *
+ * 清除 ~/.optima/token.json，与 optima-agent 兼容
  */
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { hasToken } from '../../lib/token-store.js';
-import { warn, info } from '../../utils/logger.js';
-import { updateEnvFile } from '../../utils/env-updater.js';
+import { getTokenData, clearToken } from '../../lib/token-store.js';
 
 export const logoutCommand = new Command('logout')
-  .description('退出登录（清除 refresh token）')
-  .action(async () => {
-    if (!hasToken()) {
-      warn('您还未登录');
+  .description('退出登录')
+  .action(() => {
+    const tokenData = getTokenData();
+
+    if (!tokenData) {
+      console.log();
+      console.log(chalk.yellow('⚠️  您还未登录'));
+      console.log();
       return;
     }
 
-    // 从 .env 文件删除 GOOGLE_ADS_REFRESH_TOKEN
-    try {
-      updateEnvFile('GOOGLE_ADS_REFRESH_TOKEN', '');
-      console.log(chalk.green('✓ 已退出登录（refresh token 已从 .env 清除）\n'));
-      info('如需重新登录，请运行: google-ads auth login');
-    } catch (error) {
-      console.log(chalk.yellow('⚠ 无法自动清除 refresh token'));
-      console.log(chalk.gray('请手动从 .env 文件删除或注释以下行:'));
-      console.log(chalk.cyan('  GOOGLE_ADS_REFRESH_TOKEN=...\n'));
+    const user = tokenData.user;
+
+    clearToken();
+
+    console.log();
+    console.log(chalk.green('✅ 已退出登录'));
+    if (user?.email) {
+      console.log(chalk.gray(`   账号: ${user.email}`));
     }
+    console.log();
+    console.log(chalk.gray('如需重新登录，请运行: ') + chalk.cyan('google-ads auth login'));
+    console.log();
   });

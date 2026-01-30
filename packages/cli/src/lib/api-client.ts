@@ -1,9 +1,11 @@
 /**
  * API Client - 调用 ads-backend REST API
+ *
+ * 使用 ~/.optima/token.json 中的 token，与 optima-agent 兼容
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { TokenStore } from './token-store.js';
+import { getToken, getAdsApiUrl } from './token-store.js';
 
 export interface ApiClientConfig {
   baseUrl?: string;
@@ -11,15 +13,10 @@ export interface ApiClientConfig {
 
 export class ApiClient {
   private client: AxiosInstance;
-  private tokenStore: TokenStore;
 
   constructor(config?: ApiClientConfig) {
-    const baseUrl =
-      config?.baseUrl ||
-      process.env.ADS_BACKEND_URL ||
-      'https://ads-api.optima.onl';
+    const baseUrl = config?.baseUrl || getAdsApiUrl();
 
-    this.tokenStore = new TokenStore();
     this.client = axios.create({
       baseURL: `${baseUrl}/api/v1`,
       timeout: 30000,
@@ -29,8 +26,8 @@ export class ApiClient {
     });
 
     // Add auth token to requests
-    this.client.interceptors.request.use(async (config) => {
-      const token = await this.tokenStore.getToken();
+    this.client.interceptors.request.use((config) => {
+      const token = getToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -65,8 +62,7 @@ export class ApiClient {
   }
 
   getConnectUrl(): string {
-    const baseUrl =
-      process.env.ADS_BACKEND_URL || 'https://ads-api.optima.onl';
+    const baseUrl = getAdsApiUrl();
     return `${baseUrl}/api/v1/auth/google-ads/connect`;
   }
 

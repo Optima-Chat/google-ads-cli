@@ -6,7 +6,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import ora from 'ora';
-import { GoogleAdsClient } from '../../lib/google-ads-client.js';
+import { getApiClient } from '../../lib/api-client.js';
 import { handleError } from '../../utils/errors.js';
 import { warn } from '../../utils/logger.js';
 import { getCustomerId } from '../../utils/customer-id.js';
@@ -19,7 +19,7 @@ export const listCommand = new Command('list')
   .action(async (options) => {
     try {
       const customerId = getCustomerId();
-      const client = new GoogleAdsClient();
+      const client = getApiClient();
 
       const spinner = ora('正在获取广告系列列表...').start();
 

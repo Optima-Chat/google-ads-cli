@@ -5,12 +5,12 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
-import { GoogleAdsClient } from '../../lib/google-ads-client.js';
+import { getApiClient } from '../../lib/api-client.js';
 import { handleError } from '../../utils/errors.js';
+import { getCustomerId } from '../../utils/customer-id.js';
 
 export const addCommand = new Command('add')
   .description('添加关键词')
-  .requiredOption('-c, --customer-id <id>', '客户账号 ID')
   .requiredOption('--ad-group-id <id>', '广告组 ID')
   .requiredOption('-k, --keywords <keywords>', '关键词（逗号分隔）')
   .option('--match-type <type>', '匹配类型 (BROAD, PHRASE, EXACT)', 'BROAD')
@@ -19,17 +19,18 @@ export const addCommand = new Command('add')
     const spinner = ora('添加关键词...').start();
 
     try {
-      const client = new GoogleAdsClient();
+      const customerId = getCustomerId();
+      const client = getApiClient();
 
       // 解析关键词
       const keywordTexts = options.keywords.split(',').map((k: string) => k.trim());
       const keywords = keywordTexts.map((text: string) => ({
         text,
-        match_type: options.matchType,
+        matchType: options.matchType,
       }));
 
       const result = await client.addKeywords(
-        options.customerId,
+        customerId,
         options.adGroupId,
         keywords
       );
@@ -47,7 +48,7 @@ export const addCommand = new Command('add')
         });
 
         console.log(chalk.gray('\n💡 查看关键词:'));
-        console.log(chalk.cyan(`   google-ads keyword list -c ${options.customerId} --ad-group-id ${options.adGroupId}`));
+        console.log(chalk.cyan(`   google-ads keyword list`));
       }
     } catch (error) {
       spinner.fail('添加失败');

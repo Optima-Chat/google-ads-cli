@@ -6,7 +6,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import ora from 'ora';
-import { GoogleAdsClient } from '../../lib/google-ads-client.js';
+import { getApiClient } from '../../lib/api-client.js';
 import { handleError } from '../../utils/errors.js';
 import { error as logError } from '../../utils/logger.js';
 import { getCustomerId } from '../../utils/customer-id.js';
@@ -18,12 +18,12 @@ export const infoCommand = new Command('info')
   .action(async (campaignId: string, options) => {
     try {
       const customerId = getCustomerId();
-      const client = new GoogleAdsClient();
+      const client = getApiClient();
 
       const spinner = ora('正在获取广告系列信息...').start();
 
       // 获取广告系列详情
-      const campaign = await client.getCampaign(customerId, campaignId);
+      const campaign = await client.getCampaign(customerId, campaignId) as any;
       spinner.stop();
 
       if (!campaign) {

@@ -6,7 +6,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import { readFileSync } from 'fs';
-import { GoogleAdsClient } from '../lib/google-ads-client.js';
+import { getApiClient } from '../lib/api-client.js';
 import { handleError } from '../utils/errors.js';
 import { warn } from '../utils/logger.js';
 import { getCustomerId } from '../utils/customer-id.js';
@@ -44,7 +44,7 @@ export const queryCommand = new Command('query')
         process.exit(1);
       }
 
-      const client = new GoogleAdsClient();
+      const client = getApiClient();
       const customerId = options.customerId || getCustomerId();
 
       const spinner = ora('正在执行查询...').start();

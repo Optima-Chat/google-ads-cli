@@ -6,7 +6,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';
-import { GoogleAdsClient } from '../../lib/google-ads-client.js';
+import { getApiClient } from '../../lib/api-client.js';
 import { handleError } from '../../utils/errors.js';
 import { getCustomerId } from '../../utils/customer-id.js';
 
@@ -37,7 +37,7 @@ export const deleteCommand = new Command('delete')
 
       const spinner = ora('删除广告系列...').start();
 
-      const client = new GoogleAdsClient();
+      const client = getApiClient();
       const result = await client.deleteCampaign(customerId, options.campaignId);
 
       spinner.succeed('广告系列已删除');
