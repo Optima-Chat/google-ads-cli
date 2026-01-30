@@ -142,6 +142,63 @@ export class GoogleAdsService {
   }
 
   /**
+   * Get client link status from MCC perspective
+   *
+   * Status values (ManagerLinkStatus):
+   * - 2: ACTIVE (已接受，可访问)
+   * - 4: PENDING (已发邀请，待接受)
+   * - 5: REFUSED (已拒绝)
+   * - 6: CANCELED (已取消)
+   */
+  async getClientLinkStatus(
+    customerId: string,
+  ): Promise<{ status: string; managerLinkId?: string }> {
+    const query = `
+      SELECT
+        customer_client_link.client_customer,
+        customer_client_link.status,
+        customer_client_link.manager_link_id
+      FROM customer_client_link
+      WHERE customer_client_link.client_customer = 'customers/${customerId}'
+    `;
+
+    try {
+      // Query from MCC account perspective
+      const results = await this.query(this.loginCustomerId, query);
+
+      if (results.length === 0) {
+        return { status: 'not_linked' };
+      }
+
+      const link = results[0] as {
+        customer_client_link?: {
+          status?: number;
+          manager_link_id?: string;
+        };
+      };
+
+      const statusCode = link.customer_client_link?.status;
+      const managerLinkId = link.customer_client_link?.manager_link_id;
+
+      // Map status code to string
+      const statusMap: Record<number, string> = {
+        2: 'active',
+        4: 'pending',
+        5: 'refused',
+        6: 'canceled',
+      };
+
+      return {
+        status: statusMap[statusCode as number] || 'unknown',
+        managerLinkId,
+      };
+    } catch {
+      // If query fails, the link doesn't exist
+      return { status: 'not_linked' };
+    }
+  }
+
+  /**
    * List accessible customer accounts under MCC
    */
   async listAccessibleCustomers(): Promise<string[]> {

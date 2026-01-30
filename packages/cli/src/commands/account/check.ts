@@ -8,20 +8,20 @@ import { handleError } from '../../utils/errors.js';
 import { getCustomerId } from '../../utils/customer-id.js';
 
 export const checkCommand = new Command('check')
-  .description('检查账号配置状态（账单、权限等）')
+  .description('检查账号配置状态（链接状态、权限等）')
   .action(async () => {
     try {
       const customerId = getCustomerId();
       const client = getApiClient();
 
       // Check account via backend API
-      const accountCheck = await client.checkAccount(customerId);
+      const checkResult = await client.checkAccount(customerId) as any;
 
-      const checkResult = accountCheck as any;
-
+      // New format with status field
       const result = {
         customer_id: checkResult.customerId || customerId,
-        connected: checkResult.connected || false,
+        status: checkResult.status || (checkResult.connected ? 'active' : 'not_linked'),
+        message: checkResult.message || null,
         info: checkResult.info ? {
           name: checkResult.info.descriptive_name || null,
           currency: checkResult.info.currency_code || null,
