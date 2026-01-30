@@ -434,6 +434,6 @@ CORS_ORIGIN=*
 
 - [GAQL CLI 参考](./gaql-cli-reference.md)
 - [命令示例](./EXAMPLES.md)
-- [客户创建账号指南](./客户创建账号指南.md)
-- [MCC 关联流程说明](./MCC关联流程说明.md)
-- [配置存储说明](./配置存储说明.md)
+- [客户创建账号指南](./customer-account-guide.md)
+- [MCC 关联流程说明](./mcc-linking-guide.md)
+- [配置存储说明](./config-storage.md)
