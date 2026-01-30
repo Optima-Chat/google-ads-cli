@@ -3,8 +3,6 @@
  */
 
 import { Command } from 'commander';
-import chalk from 'chalk';
-import ora from 'ora';
 import { getApiClient } from '../../lib/api-client.js';
 import { handleError } from '../../utils/errors.js';
 import { getCustomerId } from '../../utils/customer-id.js';
@@ -18,41 +16,53 @@ export const createCommand = new Command('create')
   .option('--path1 <path>', '显示路径1')
   .option('--path2 <path>', '显示路径2')
   .option('--status <status>', '状态 (ENABLED, PAUSED)', 'PAUSED')
-  .option('--json', '以 JSON 格式输出')
   .action(async (options) => {
-    const spinner = ora('创建广告...').start();
-
     try {
       const customerId = getCustomerId();
       const client = getApiClient();
 
-      // 解析标题和描述
       const headlines = options.headlines.split(',').map((h: string) => h.trim());
       const descriptions = options.descriptions.split(',').map((d: string) => d.trim());
 
       // 验证数量
-      if (headlines.length < 3) {
-        throw new Error('至少需要 3 个标题');
+      if (headlines.length < 3 || headlines.length > 15) {
+        console.log(JSON.stringify({
+          error: 'invalid_headlines',
+          message: '标题数量必须在 3-15 个之间',
+          provided: headlines.length
+        }, null, 2));
+        process.exit(1);
       }
-      if (headlines.length > 15) {
-        throw new Error('最多 15 个标题');
-      }
-      if (descriptions.length < 2) {
-        throw new Error('至少需要 2 个描述');
-      }
-      if (descriptions.length > 4) {
-        throw new Error('最多 4 个描述');
+      if (descriptions.length < 2 || descriptions.length > 4) {
+        console.log(JSON.stringify({
+          error: 'invalid_descriptions',
+          message: '描述数量必须在 2-4 个之间',
+          provided: descriptions.length
+        }, null, 2));
+        process.exit(1);
       }
 
       // 验证长度
       for (const headline of headlines) {
         if (headline.length > 30) {
-          throw new Error(`标题 "${headline}" 超过 30 字符限制`);
+          console.log(JSON.stringify({
+            error: 'headline_too_long',
+            message: `标题超过 30 字符限制`,
+            headline,
+            length: headline.length
+          }, null, 2));
+          process.exit(1);
         }
       }
       for (const desc of descriptions) {
         if (desc.length > 90) {
-          throw new Error(`描述 "${desc}" 超过 90 字符限制`);
+          console.log(JSON.stringify({
+            error: 'description_too_long',
+            message: `描述超过 90 字符限制`,
+            description: desc,
+            length: desc.length
+          }, null, 2));
+          process.exit(1);
         }
       }
 
@@ -66,18 +76,8 @@ export const createCommand = new Command('create')
         status: options.status,
       });
 
-      spinner.succeed('广告创建成功');
-
-      if (options.json) {
-        console.log(JSON.stringify(result, null, 2));
-      } else {
-        console.log(chalk.green('\n✅ 响应式搜索广告已创建'));
-        console.log(chalk.gray(`标题数量: ${headlines.length}`));
-        console.log(chalk.gray(`描述数量: ${descriptions.length}`));
-        console.log(chalk.gray(`最终网址: ${options.finalUrl}\n`));
-      }
+      console.log(JSON.stringify(result, null, 2));
     } catch (error) {
-      spinner.fail('创建广告失败');
       handleError(error);
     }
   });
