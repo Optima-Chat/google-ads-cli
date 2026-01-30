@@ -526,22 +526,12 @@ export class GoogleAdsClient {
   async deleteCampaign(customerId: string, campaignId: string): Promise<any> {
     try {
       const customer = await this.getCustomer(customerId);
-
       const resourceName = `customers/${customerId}/campaigns/${campaignId}`;
-
-      const operations: MutateOperation<any>[] = [
-        {
-          entity: 'campaign',
-          operation: 'remove',
-          resource_name: resourceName,
-          resource: {},
-        },
-      ];
-
-      const result = await customer.mutateResources(operations);
+      const result = await customer.campaigns.remove([resourceName]);
       return result;
     } catch (error: any) {
-      throw new GoogleAdsError(`删除广告系列失败: ${error.message}`, error);
+      const errorMessage = error.message || error.details || (error.errors && JSON.stringify(error.errors)) || JSON.stringify(error);
+      throw new GoogleAdsError(`删除广告系列失败: ${errorMessage}`, error);
     }
   }
 
@@ -551,22 +541,12 @@ export class GoogleAdsClient {
   async deleteAdGroup(customerId: string, adGroupId: string): Promise<any> {
     try {
       const customer = await this.getCustomer(customerId);
-
       const resourceName = `customers/${customerId}/adGroups/${adGroupId}`;
-
-      const operations: MutateOperation<any>[] = [
-        {
-          entity: 'ad_group',
-          operation: 'remove',
-          resource_name: resourceName,
-          resource: {},
-        },
-      ];
-
-      const result = await customer.mutateResources(operations);
+      const result = await customer.adGroups.remove([resourceName]);
       return result;
     } catch (error: any) {
-      throw new GoogleAdsError(`删除广告组失败: ${error.message}`, error);
+      const errorMessage = error.message || error.details || (error.errors && JSON.stringify(error.errors)) || JSON.stringify(error);
+      throw new GoogleAdsError(`删除广告组失败: ${errorMessage}`, error);
     }
   }
 
@@ -576,22 +556,12 @@ export class GoogleAdsClient {
   async deleteKeyword(customerId: string, adGroupId: string, criterionId: string): Promise<any> {
     try {
       const customer = await this.getCustomer(customerId);
-
       const resourceName = `customers/${customerId}/adGroupCriteria/${adGroupId}~${criterionId}`;
-
-      const operations: MutateOperation<any>[] = [
-        {
-          entity: 'ad_group_criterion',
-          operation: 'remove',
-          resource_name: resourceName,
-          resource: {},
-        },
-      ];
-
-      const result = await customer.mutateResources(operations);
+      const result = await customer.adGroupCriteria.remove([resourceName]);
       return result;
     } catch (error: any) {
-      throw new GoogleAdsError(`删除关键词失败: ${error.message}`, error);
+      const errorMessage = error.message || error.details || (error.errors && JSON.stringify(error.errors)) || JSON.stringify(error);
+      throw new GoogleAdsError(`删除关键词失败: ${errorMessage}`, error);
     }
   }
 

@@ -5,9 +5,8 @@
  * 用自然语言管理 Google Ads 广告投放 - 专为 Claude Code 设计
  */
 
-// 加载 .env 文件中的环境变量
-import dotenv from 'dotenv';
-dotenv.config();
+// 加载 .env 文件中的环境变量（静默模式）
+import 'dotenv/config';
 
 import { Command } from 'commander';
 import chalk from 'chalk';
