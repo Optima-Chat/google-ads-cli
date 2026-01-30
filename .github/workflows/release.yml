@@ -5,7 +5,6 @@ on:
     tags:
       - 'v*'  # 当推送 v* 标签时触发（如 v0.5.0）
       - 'cli-v*'  # CLI 独立发布
-      - 'backend-v*'  # Backend 独立发布
 
 jobs:
   release-cli:
@@ -73,11 +72,11 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Optima Ads CLI v${{ steps.get_version.outputs.VERSION }}
           body: |
-            ## 🎉 Optima Ads CLI v${{ steps.get_version.outputs.VERSION }}
+            ## Optima Ads CLI v${{ steps.get_version.outputs.VERSION }}
 
             用自然语言管理 Google Ads 广告投放 - 专为 Claude Code 设计
 
-            ### 📦 安装
+            ### 安装
 
             ```bash
             # 全局安装
@@ -87,11 +86,11 @@ jobs:
             npx @optima-chat/ads-cli
             ```
 
-            ### 📝 更新内容
+            ### 更新内容
 
             ${{ steps.changelog.outputs.changelog }}
 
-            ### 🚀 快速开始
+            ### 快速开始
 
             ```bash
             # OAuth2 登录
@@ -104,75 +103,15 @@ jobs:
             google-ads campaign list
             ```
 
-            ### 🔗 链接
+            ### 链接
 
-            - 📦 [npm 包](https://www.npmjs.com/package/@optima-chat/ads-cli/v/${{ steps.get_version.outputs.VERSION }})
-            - 📖 [完整文档](https://github.com/Optima-Chat/optima-ads#readme)
+            - [npm 包](https://www.npmjs.com/package/@optima-chat/ads-cli/v/${{ steps.get_version.outputs.VERSION }})
+            - [完整文档](https://github.com/Optima-Chat/optima-ads#readme)
 
             ---
 
-            🤖 Automated release by GitHub Actions
+            Automated release by GitHub Actions
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  release-backend:
-    if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/backend-v')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-1
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Extract version from tag
-        id: get_version
-        run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          VERSION=${TAG#v}
-          VERSION=${VERSION#backend-v}
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Build and push Docker image (Stage)
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ads-backend-stage-ecs
-          IMAGE_TAG: ${{ steps.get_version.outputs.VERSION }}
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f packages/backend/Dockerfile .
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
-      - name: Build and push Docker image (Prod)
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ads-backend-prod-ecs
-          IMAGE_TAG: ${{ steps.get_version.outputs.VERSION }}
-        run: |
-          docker tag $ECR_REGISTRY/ads-backend-stage-ecs:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
-      - name: Deploy to ECS (Stage)
-        run: |
-          aws ecs update-service --cluster optima-stage-cluster --service ads-backend-stage --force-new-deployment
-
-      - name: Deploy to ECS (Prod)
-        run: |
-          aws ecs update-service --cluster optima-prod-cluster --service ads-backend-prod --force-new-deployment

@@ -1,0 +1,43 @@
+# Ads Backend - ECS Deployment
+# 使用 Reusable Workflow 部署到 AWS ECS
+
+name: Deploy (ECS)
+
+run-name: |
+  ${{ inputs.environment == 'prod' && 'Prod' ||
+      inputs.environment == 'both' && 'Both' ||
+      'Stage' }} (${{ github.ref_name }}) - ${{ github.actor }}
+
+on:
+  # 手动触发
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - stage
+          - prod
+          - both
+        default: 'stage'
+      skip_build:
+        description: 'Skip build (use latest image)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  deploy:
+    uses: Optima-Chat/optima-workflows/.github/workflows/_deploy-ecs.yml@main
+    with:
+      service_name: ads-backend
+      environment: ${{ inputs.environment }}
+      skip_build: ${{ inputs.skip_build || false }}
+      dockerfile: packages/backend/Dockerfile
+      has_tests: false
+      has_migration: false
+      health_check_path: /health
+      stage_domain: ads-api.stage.optima.onl
+      prod_domain: ads-api.optima.onl
+    secrets: inherit
