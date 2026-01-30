@@ -2,7 +2,7 @@
 
 > Google Ads 广告管理平台 - Monorepo 包含 CLI 和 Backend 两个包
 
-[![npm version](https://img.shields.io/npm/v/@optima-chat/google-ads-cli.svg)](https://www.npmjs.com/package/@optima-chat/google-ads-cli)
+[![npm version](https://img.shields.io/npm/v/@optima-chat/ads-cli.svg)](https://www.npmjs.com/package/@optima-chat/ads-cli)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -56,7 +56,7 @@ pnpm --filter @optima-chat/ads-backend build
 ### 安装
 
 ```bash
-npm install -g @optima-chat/google-ads-cli@latest
+npm install -g @optima-chat/ads-cli@latest
 ```
 
 ### 认证
@@ -84,6 +84,15 @@ google-ads query -q "SELECT campaign.name, metrics.clicks FROM campaign" --json
 
 # 查看账号状态
 google-ads account check
+
+# 广告系列定向
+google-ads campaign targeting list --campaign-id 123456
+google-ads campaign targeting add --campaign-id 123456 --type location --geo-target 2840
+google-ads campaign targeting remove --campaign-id 123456 --criterion-id 789
+
+# 广告组定向
+google-ads ad-group targeting list --ad-group-id 123456
+google-ads ad-group targeting add --ad-group-id 123456 --type age --range 25-34
 ```
 
 详细文档：[CLI 使用示例](docs/EXAMPLES.md)
@@ -118,6 +127,12 @@ pnpm dev:backend
 | `GET /api/v1/customers/:id/keywords` | 列出关键词 |
 | `GET /api/v1/customers/:id/ads` | 列出广告 |
 | `POST /api/v1/customers/:id/query` | 执行 GAQL 查询 |
+| `GET /api/v1/customers/:id/campaigns/:id/targeting` | 列出广告系列定向 |
+| `POST /api/v1/customers/:id/campaigns/:id/targeting` | 添加广告系列定向 |
+| `DELETE /api/v1/customers/:id/campaigns/:id/targeting/:criterionId` | 删除广告系列定向 |
+| `GET /api/v1/customers/:id/ad-groups/:id/targeting` | 列出广告组定向 |
+| `POST /api/v1/customers/:id/ad-groups/:id/targeting` | 添加广告组定向 |
+| `DELETE /api/v1/customers/:id/ad-groups/:id/targeting/:criterionId` | 删除广告组定向 |
 
 ### 环境变量
 
@@ -172,7 +187,7 @@ git push origin v0.x.0
 - **构建工具**: Turborepo + pnpm workspace
 - **语言**: TypeScript 5.0+
 - **CLI**: Commander.js
-- **Backend**: Express.js
+- **Backend**: NestJS
 - **数据库**: PostgreSQL
 - **部署**: AWS ECS
 
