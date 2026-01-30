@@ -5,6 +5,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthClientService } from './auth-client.service';
+import { CommerceClientService } from './commerce-client.service';
 import { GoogleAdsModule } from '../google-ads/google-ads.module';
 
 @Module({
@@ -14,7 +15,7 @@ import { GoogleAdsModule } from '../google-ads/google-ads.module';
     forwardRef(() => GoogleAdsModule),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthClientService, JwtStrategy],
-  exports: [PassportModule, AuthService, AuthClientService],
+  providers: [AuthService, AuthClientService, CommerceClientService, JwtStrategy],
+  exports: [PassportModule, AuthService, AuthClientService, CommerceClientService],
 })
 export class AuthModule {}

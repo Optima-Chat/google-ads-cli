@@ -61,6 +61,17 @@ export class ApiClient {
     return data;
   }
 
+  async getMe(): Promise<{
+    user_id: string;
+    email?: string;
+    role?: string;
+    google_ads_customer_id?: string;
+    merchant_name?: string;
+  }> {
+    const { data } = await this.client.get('/auth/me');
+    return data;
+  }
+
   getConnectUrl(): string {
     const baseUrl = getAdsApiUrl();
     return `${baseUrl}/api/v1/auth/google-ads/connect`;
