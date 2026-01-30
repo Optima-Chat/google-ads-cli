@@ -1,0 +1,43 @@
+services:
+  ads-backend:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=optima_ads
+      - DB_SYNCHRONIZE=true
+      - USER_AUTH_URL=https://user-auth.optima.onl
+      - JWT_SECRET=${JWT_SECRET}
+      - GOOGLE_ADS_DEVELOPER_TOKEN=${GOOGLE_ADS_DEVELOPER_TOKEN}
+      - GOOGLE_ADS_CLIENT_ID=${GOOGLE_ADS_CLIENT_ID}
+      - GOOGLE_ADS_CLIENT_SECRET=${GOOGLE_ADS_CLIENT_SECRET}
+      - GOOGLE_ADS_MANAGER_ACCOUNT_ID=${GOOGLE_ADS_MANAGER_ACCOUNT_ID}
+      - GOOGLE_ADS_REDIRECT_URI=${GOOGLE_ADS_REDIRECT_URI}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3001}
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=optima_ads
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

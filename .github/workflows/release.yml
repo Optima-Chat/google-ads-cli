@@ -1,22 +1,25 @@
-name: Release to NPM
+name: Release
 
 on:
   push:
     tags:
-      - 'v*'  # 当推送 v* 标签时触发（如 v0.1.1, v0.2.0）
+      - 'v*'  # 当推送 v* 标签时触发（如 v0.5.0）
+      - 'cli-v*'  # CLI 独立发布
+      - 'backend-v*'  # Backend 独立发布
 
 jobs:
-  release:
+  release-cli:
+    if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/cli-v')
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # 需要写权限来创建 GitHub Release
-      id-token: write  # NPM provenance
+      contents: write
+      id-token: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 获取完整历史，用于生成 changelog
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -24,43 +27,40 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: npm run build
+      - name: Build CLI
+        run: pnpm --filter @optima-chat/ads-cli build
 
-      - name: Run tests (if available)
-        run: npm test || echo "No tests configured"
-        continue-on-error: true
-
-      - name: Publish to npm
-        run: npm publish --access public
+      - name: Publish CLI to npm
+        run: pnpm --filter @optima-chat/ads-cli publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Extract version from tag
         id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG#v}
+          VERSION=${VERSION#cli-v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Generate changelog
         id: changelog
         run: |
-          # 获取上一个 tag
           PREVIOUS_TAG=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
-
           if [ -z "$PREVIOUS_TAG" ]; then
-            # 如果没有上一个 tag，获取最近 20 个 commits
             CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges -n 20)
           else
-            # 获取两个 tag 之间的 commits
             CHANGELOG=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
           fi
-
-          # 保存到文件
           echo "$CHANGELOG" > changelog.txt
-
-          # 输出到 GitHub Actions（处理多行）
           {
             echo "changelog<<EOF"
             echo "$CHANGELOG"
@@ -71,9 +71,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
-          name: Release v${{ steps.get_version.outputs.VERSION }}
+          name: Optima Ads CLI v${{ steps.get_version.outputs.VERSION }}
           body: |
-            ## 🎉 Google Ads CLI v${{ steps.get_version.outputs.VERSION }}
+            ## 🎉 Optima Ads CLI v${{ steps.get_version.outputs.VERSION }}
 
             用自然语言管理 Google Ads 广告投放 - 专为 Claude Code 设计
 
@@ -81,10 +81,10 @@ jobs:
 
             ```bash
             # 全局安装
-            npm install -g @optima-chat/google-ads-cli@latest
+            npm install -g @optima-chat/ads-cli@latest
 
             # 或使用 npx（无需安装）
-            npx @optima-chat/google-ads-cli
+            npx @optima-chat/ads-cli
             ```
 
             ### 📝 更新内容
@@ -94,22 +94,20 @@ jobs:
             ### 🚀 快速开始
 
             ```bash
-            # 初始化配置
-            google-ads init
-
             # OAuth2 登录
             google-ads auth login
 
             # 查看账号列表
             google-ads account list
+
+            # 列出广告系列
+            google-ads campaign list
             ```
 
             ### 🔗 链接
 
-            - 📦 [npm 包](https://www.npmjs.com/package/@optima-chat/google-ads-cli/v/${{ steps.get_version.outputs.VERSION }})
-            - 📖 [完整文档](https://github.com/Optima-Chat/google-ads-cli#readme)
-            - 💡 [使用示例](https://github.com/Optima-Chat/google-ads-cli/blob/main/docs/EXAMPLES.md)
-            - 🐛 [报告问题](https://github.com/Optima-Chat/google-ads-cli/issues)
+            - 📦 [npm 包](https://www.npmjs.com/package/@optima-chat/ads-cli/v/${{ steps.get_version.outputs.VERSION }})
+            - 📖 [完整文档](https://github.com/Optima-Chat/optima-ads#readme)
 
             ---
 
@@ -118,3 +116,48 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-backend:
+    if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/tags/backend-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG#v}
+          VERSION=${VERSION#backend-v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: optima-ads-backend
+          IMAGE_TAG: ${{ steps.get_version.outputs.VERSION }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f packages/backend/Dockerfile .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service --cluster optima-prod --service ads-backend --force-new-deployment
