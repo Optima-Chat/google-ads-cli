@@ -9,10 +9,11 @@ import { readFileSync } from 'fs';
 import { GoogleAdsClient } from '../lib/google-ads-client.js';
 import { handleError } from '../utils/errors.js';
 import { warn } from '../utils/logger.js';
+import { getCustomerId } from '../utils/customer-id.js';
 
 export const queryCommand = new Command('query')
   .description('执行 GAQL 查询')
-  .requiredOption('-c, --customer-id <id>', '客户账号 ID')
+  .option('-c, --customer-id <id>', '客户账号 ID（可选，默认从配置读取）')
   .option('-q, --query <query>', 'GAQL 查询语句')
   .option('-f, --file <file>', '从文件读取 GAQL 查询')
   .option('--json', '以 JSON 格式输出（默认）')
@@ -44,11 +45,12 @@ export const queryCommand = new Command('query')
       }
 
       const client = new GoogleAdsClient();
+      const customerId = options.customerId || getCustomerId();
 
       const spinner = ora('正在执行查询...').start();
 
       // 执行查询
-      const results = await client.query(options.customerId, query);
+      const results = await client.query(customerId, query);
       spinner.stop();
 
       // 输出结果
