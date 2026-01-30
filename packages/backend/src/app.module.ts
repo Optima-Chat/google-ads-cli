@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { GoogleAdsModule } from './google-ads/google-ads.module';
 import { CredentialsModule } from './credentials/credentials.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CredentialsModule } from './credentials/credentials.module';
       }),
       inject: [ConfigService],
     }),
+    HealthModule,
     AuthModule,
     GoogleAdsModule,
     CredentialsModule,

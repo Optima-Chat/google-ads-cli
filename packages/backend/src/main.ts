@@ -5,8 +5,10 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Global prefix
-  app.setGlobalPrefix('api/v1');
+  // Global prefix (exclude health check)
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['health'],
+  });
 
   // Enable CORS
   app.enableCors({
@@ -26,7 +28,7 @@ async function bootstrap() {
     }),
   );
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 8000;
   await app.listen(port);
   console.log(`Ads Backend running on port ${port}`);
 }
