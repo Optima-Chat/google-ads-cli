@@ -21,6 +21,7 @@ import { adGroupCommand } from './commands/ad-group/index.js';
 import { keywordCommand } from './commands/keyword/index.js';
 import { queryCommand } from './commands/query.js';
 import { configCommand } from './commands/config.js';
+import { fetchOptimaConfig } from './utils/optima-config.js';
 
 // 获取版本号
 const __filename = fileURLToPath(import.meta.url);
@@ -76,5 +77,13 @@ program.action(() => {
   console.log(chalk.gray('   README: https://github.com/Optima-Chat/google-ads-cli#readme\n'));
 });
 
-// 解析命令行参数
-program.parse();
+// 启动 CLI
+async function main() {
+  // 从 commerce-backend 获取配置（如果有 OPTIMA_TOKEN）
+  await fetchOptimaConfig();
+
+  // 解析命令行参数
+  program.parse();
+}
+
+main();
