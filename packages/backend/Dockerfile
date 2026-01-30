@@ -40,9 +40,9 @@ COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
 
 # Set environment
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=8000
 
-EXPOSE 3000
+EXPOSE 8000
 
 # Start the application
 CMD ["node", "packages/backend/dist/main.js"]

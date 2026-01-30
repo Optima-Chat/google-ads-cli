@@ -171,8 +171,8 @@ jobs:
 
       - name: Deploy to ECS (Stage)
         run: |
-          aws ecs update-service --cluster optima-stage-ecs --service ads-backend --force-new-deployment
+          aws ecs update-service --cluster optima-stage-cluster --service ads-backend-stage --force-new-deployment
 
       - name: Deploy to ECS (Prod)
         run: |
-          aws ecs update-service --cluster optima-prod-ecs --service ads-backend --force-new-deployment
+          aws ecs update-service --cluster optima-prod-cluster --service ads-backend-prod --force-new-deployment
