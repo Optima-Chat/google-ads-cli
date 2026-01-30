@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   GoogleAdsApi,
@@ -55,7 +60,64 @@ export class GoogleAdsService {
    */
   async query(customerId: string, gaqlQuery: string): Promise<unknown[]> {
     const customer = this.getCustomer(customerId);
-    return customer.query(gaqlQuery);
+    try {
+      return await customer.query(gaqlQuery);
+    } catch (error) {
+      this.handleGoogleAdsError(error);
+    }
+  }
+
+  /**
+   * Execute mutate operations with error handling
+   */
+  async mutate(
+    customerId: string,
+    operations: MutateOperation<unknown>[],
+  ): Promise<unknown> {
+    const customer = this.getCustomer(customerId);
+    try {
+      return await customer.mutateResources(operations);
+    } catch (error) {
+      this.handleGoogleAdsError(error);
+    }
+  }
+
+  /**
+   * Handle Google Ads API errors and convert to NestJS exceptions
+   */
+  private handleGoogleAdsError(error: unknown): never {
+    const err = error as {
+      errors?: Array<{ error_code?: Record<string, number>; message?: string }>;
+      message?: string;
+    };
+
+    if (err.errors && err.errors.length > 0) {
+      const firstError = err.errors[0];
+      const errorCode = firstError.error_code || {};
+      const message = firstError.message || 'Google Ads API error';
+
+      // Authorization errors -> 403
+      if ('authorization_error' in errorCode) {
+        throw new ForbiddenException(message);
+      }
+
+      // Request errors -> 400
+      if (
+        'request_error' in errorCode ||
+        'query_error' in errorCode ||
+        'field_error' in errorCode
+      ) {
+        throw new BadRequestException(message);
+      }
+
+      // Other errors -> 500 with message
+      throw new InternalServerErrorException(message);
+    }
+
+    // Fallback for non-standard errors
+    throw new InternalServerErrorException(
+      err.message || 'Unknown Google Ads API error',
+    );
   }
 
   /**
@@ -174,7 +236,6 @@ export class GoogleAdsService {
       status?: string;
     },
   ): Promise<unknown> {
-    const customer = this.getCustomer(customerId);
     const budgetResourceName = `customers/${customerId}/campaignBudgets/-1`;
 
     const operations: MutateOperation<unknown>[] = [
@@ -206,7 +267,7 @@ export class GoogleAdsService {
       },
     ];
 
-    return customer.mutateResources(operations);
+    return this.mutate(customerId, operations);
   }
 
   async updateCampaign(
@@ -214,7 +275,6 @@ export class GoogleAdsService {
     campaignId: string,
     data: { status?: string; name?: string; budgetAmountMicros?: number },
   ): Promise<unknown> {
-    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/campaigns/${campaignId}`;
     const resource: Record<string, unknown> = {};
 
@@ -226,13 +286,13 @@ export class GoogleAdsService {
       const campaignQuery = `
         SELECT campaign.campaign_budget FROM campaign WHERE campaign.id = ${campaignId}
       `;
-      const campaignResult = await customer.query(campaignQuery);
+      const campaignResult = await this.query(customerId, campaignQuery);
       const budgetResourceName = (
         campaignResult[0] as Record<string, Record<string, string>>
       )?.campaign?.campaign_budget;
 
       if (budgetResourceName) {
-        await customer.mutateResources([
+        await this.mutate(customerId, [
           {
             entity: 'campaign_budget',
             operation: 'update',
@@ -247,7 +307,7 @@ export class GoogleAdsService {
 
     if (Object.keys(resource).length > 0) {
       resource.resource_name = resourceName;
-      return customer.mutateResources([
+      return this.mutate(customerId, [
         { entity: 'campaign', operation: 'update', resource },
       ]);
     }
@@ -259,9 +319,13 @@ export class GoogleAdsService {
     customerId: string,
     campaignId: string,
   ): Promise<unknown> {
-    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/campaigns/${campaignId}`;
-    return customer.campaigns.remove([resourceName]);
+    try {
+      const customer = this.getCustomer(customerId);
+      return await customer.campaigns.remove([resourceName]);
+    } catch (error) {
+      this.handleGoogleAdsError(error);
+    }
   }
 
   // ============ Ad Group Operations ============
@@ -334,10 +398,9 @@ export class GoogleAdsService {
       status?: string;
     },
   ): Promise<unknown> {
-    const customer = this.getCustomer(customerId);
     const campaignResourceName = `customers/${customerId}/campaigns/${data.campaignId}`;
 
-    return customer.mutateResources([
+    return this.mutate(customerId, [
       {
         entity: 'ad_group',
         operation: 'create',
@@ -356,7 +419,6 @@ export class GoogleAdsService {
     adGroupId: string,
     data: { status?: string; name?: string; cpcBidMicros?: number },
   ): Promise<unknown> {
-    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/adGroups/${adGroupId}`;
 
     const resource: Record<string, unknown> = { resource_name: resourceName };
@@ -364,7 +426,7 @@ export class GoogleAdsService {
     if (data.name) resource.name = data.name;
     if (data.cpcBidMicros) resource.cpc_bid_micros = data.cpcBidMicros;
 
-    return customer.mutateResources([
+    return this.mutate(customerId, [
       { entity: 'ad_group', operation: 'update', resource },
     ]);
   }
@@ -373,9 +435,13 @@ export class GoogleAdsService {
     customerId: string,
     adGroupId: string,
   ): Promise<unknown> {
-    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/adGroups/${adGroupId}`;
-    return customer.adGroups.remove([resourceName]);
+    try {
+      const customer = this.getCustomer(customerId);
+      return await customer.adGroups.remove([resourceName]);
+    } catch (error) {
+      this.handleGoogleAdsError(error);
+    }
   }
 
   // ============ Keyword Operations ============
@@ -426,7 +492,6 @@ export class GoogleAdsService {
     adGroupId: string,
     keywords: Array<{ text: string; matchType?: string }>,
   ): Promise<unknown> {
-    const customer = this.getCustomer(customerId);
     const adGroupResourceName = `customers/${customerId}/adGroups/${adGroupId}`;
 
     const operations: MutateOperation<unknown>[] = keywords.map((keyword) => ({
@@ -442,7 +507,7 @@ export class GoogleAdsService {
       },
     }));
 
-    return customer.mutateResources(operations);
+    return this.mutate(customerId, operations);
   }
 
   async updateKeyword(
@@ -451,14 +516,13 @@ export class GoogleAdsService {
     criterionId: string,
     data: { status?: string; cpcBidMicros?: number },
   ): Promise<unknown> {
-    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/adGroupCriteria/${adGroupId}~${criterionId}`;
 
     const resource: Record<string, unknown> = { resource_name: resourceName };
     if (data.status) resource.status = data.status;
     if (data.cpcBidMicros) resource.cpc_bid_micros = data.cpcBidMicros;
 
-    return customer.mutateResources([
+    return this.mutate(customerId, [
       { entity: 'ad_group_criterion', operation: 'update', resource },
     ]);
   }
@@ -468,9 +532,13 @@ export class GoogleAdsService {
     adGroupId: string,
     criterionId: string,
   ): Promise<unknown> {
-    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/adGroupCriteria/${adGroupId}~${criterionId}`;
-    return customer.adGroupCriteria.remove([resourceName]);
+    try {
+      const customer = this.getCustomer(customerId);
+      return await customer.adGroupCriteria.remove([resourceName]);
+    } catch (error) {
+      this.handleGoogleAdsError(error);
+    }
   }
 
   // ============ Ad Operations ============
@@ -568,9 +636,7 @@ export class GoogleAdsService {
       status?: string;
     },
   ): Promise<unknown> {
-    const customer = this.getCustomer(customerId);
-
-    return customer.mutateResources([
+    return this.mutate(customerId, [
       {
         entity: 'ad_group_ad',
         operation: 'create',
@@ -600,13 +666,12 @@ export class GoogleAdsService {
     adId: string,
     data: { status?: string },
   ): Promise<unknown> {
-    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/adGroupAds/${adGroupId}~${adId}`;
 
     const resource: Record<string, unknown> = { resource_name: resourceName };
     if (data.status) resource.status = data.status;
 
-    return customer.mutateResources([
+    return this.mutate(customerId, [
       { entity: 'ad_group_ad', operation: 'update', resource },
     ]);
   }
@@ -616,8 +681,12 @@ export class GoogleAdsService {
     adGroupId: string,
     adId: string,
   ): Promise<unknown> {
-    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/adGroupAds/${adGroupId}~${adId}`;
-    return customer.adGroupAds.remove([resourceName]);
+    try {
+      const customer = this.getCustomer(customerId);
+      return await customer.adGroupAds.remove([resourceName]);
+    } catch (error) {
+      this.handleGoogleAdsError(error);
+    }
   }
 }

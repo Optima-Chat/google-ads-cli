@@ -1,15 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Strategy } from 'passport-custom';
+import { Request } from 'express';
 import { AuthClientService } from './auth-client.service';
-
-export interface JwtPayload {
-  sub: string; // user_id
-  email?: string;
-  role?: string;
-  iat?: number;
-  exp?: number;
-}
 
 export interface AuthenticatedUser {
   userId: string;
@@ -24,48 +17,32 @@ export interface AuthenticatedUser {
  * 通过 Client Credentials 流程获取服务 token，然后调用 /auth/verify 验证用户 token
  */
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(private authClientService: AuthClientService) {
-    super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
-      // 使用固定的 secret，实际验证由 user-auth 服务完成
-      secretOrKeyProvider: async (
-        _request: unknown,
-        rawJwtToken: string,
-        done: (err: Error | null, secretOrKey?: string) => void,
-      ) => {
-        try {
-          // 使用 AuthClientService 验证 token
-          const result =
-            await this.authClientService.verifyUserToken(rawJwtToken);
-
-          if (result.valid) {
-            // Token 有效，返回一个占位 secret 让 passport-jwt 继续处理
-            done(null, 'verified-by-user-auth');
-          } else {
-            done(new UnauthorizedException(result.error || 'Invalid token'));
-          }
-        } catch (error) {
-          done(
-            new UnauthorizedException(
-              error instanceof Error ? error.message : 'Token validation failed',
-            ),
-          );
-        }
-      },
-    });
+    super();
   }
 
-  async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
-    if (!payload.sub) {
-      throw new UnauthorizedException('Invalid token payload');
+  async validate(req: Request): Promise<AuthenticatedUser> {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Missing or invalid authorization header');
+    }
+
+    const token = authHeader.substring(7);
+    if (!token) {
+      throw new UnauthorizedException('Token is empty');
+    }
+
+    const result = await this.authClientService.verifyUserToken(token);
+
+    if (!result.valid) {
+      throw new UnauthorizedException(result.error || 'Invalid token');
     }
 
     return {
-      userId: payload.sub,
-      email: payload.email,
-      role: payload.role,
+      userId: result.user_id!,
+      email: result.email,
+      role: result.role,
     };
   }
 }
