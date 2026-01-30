@@ -12,6 +12,10 @@ import { QueryController } from './query/query.controller';
 import { QueryService } from './query/query.service';
 import { AccountsController } from './accounts.controller';
 import { AuthModule } from '../auth/auth.module';
+import { CampaignTargetingController } from './targeting/campaign-targeting.controller';
+import { CampaignTargetingService } from './targeting/campaign-targeting.service';
+import { AdGroupTargetingController } from './targeting/ad-group-targeting.controller';
+import { AdGroupTargetingService } from './targeting/ad-group-targeting.service';
 
 @Module({
   imports: [forwardRef(() => AuthModule)],
@@ -22,6 +26,8 @@ import { AuthModule } from '../auth/auth.module';
     KeywordsController,
     AdsController,
     QueryController,
+    CampaignTargetingController,
+    AdGroupTargetingController,
   ],
   providers: [
     GoogleAdsService,
@@ -30,6 +36,8 @@ import { AuthModule } from '../auth/auth.module';
     KeywordsService,
     AdsService,
     QueryService,
+    CampaignTargetingService,
+    AdGroupTargetingService,
   ],
   exports: [GoogleAdsService],
 })

@@ -359,6 +359,105 @@ export class ApiClient {
     );
     return data;
   }
+
+  // ============ Campaign Targeting ============
+
+  async listCampaignTargeting(
+    customerId: string,
+    campaignId: string,
+  ): Promise<unknown[]> {
+    const { data } = await this.client.get(
+      `/customers/${customerId}/campaigns/${campaignId}/targeting`,
+    );
+    return data;
+  }
+
+  async addCampaignTargeting(
+    customerId: string,
+    campaignId: string,
+    targeting: {
+      type: string;
+      geoTargetConstant?: string;
+      latitude?: number;
+      longitude?: number;
+      radius?: number;
+      radiusUnits?: string;
+      device?: string;
+      dayOfWeek?: string;
+      startHour?: number;
+      startMinute?: number;
+      endHour?: number;
+      endMinute?: number;
+      ageRange?: string;
+      gender?: string;
+      incomeRange?: string;
+      parentalStatus?: string;
+      userListId?: string;
+      negative?: boolean;
+      bidModifier?: number;
+    },
+  ): Promise<unknown> {
+    const { data } = await this.client.post(
+      `/customers/${customerId}/campaigns/${campaignId}/targeting`,
+      targeting,
+    );
+    return data;
+  }
+
+  async removeCampaignTargeting(
+    customerId: string,
+    campaignId: string,
+    criterionId: string,
+  ): Promise<unknown> {
+    const { data } = await this.client.delete(
+      `/customers/${customerId}/campaigns/${campaignId}/targeting/${criterionId}`,
+    );
+    return data;
+  }
+
+  // ============ Ad Group Targeting ============
+
+  async listAdGroupTargeting(
+    customerId: string,
+    adGroupId: string,
+  ): Promise<unknown[]> {
+    const { data } = await this.client.get(
+      `/customers/${customerId}/ad-groups/${adGroupId}/targeting`,
+    );
+    return data;
+  }
+
+  async addAdGroupTargeting(
+    customerId: string,
+    adGroupId: string,
+    targeting: {
+      type: string;
+      ageRange?: string;
+      gender?: string;
+      incomeRange?: string;
+      parentalStatus?: string;
+      userListId?: string;
+      negative?: boolean;
+      bidModifier?: number;
+    },
+  ): Promise<unknown> {
+    const { data } = await this.client.post(
+      `/customers/${customerId}/ad-groups/${adGroupId}/targeting`,
+      targeting,
+    );
+    return data;
+  }
+
+  async removeAdGroupTargeting(
+    customerId: string,
+    adGroupId: string,
+    criterionId: string,
+  ): Promise<unknown> {
+    const { data } = await this.client.delete(
+      `/customers/${customerId}/ad-groups/${adGroupId}/targeting/${criterionId}`,
+    );
+    return data;
+  }
 }
 
 // Singleton instance

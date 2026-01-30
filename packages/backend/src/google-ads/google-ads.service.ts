@@ -12,6 +12,16 @@ import {
   MutateOperation,
   toMicros,
 } from 'google-ads-api';
+import {
+  TargetingType,
+  DeviceType,
+  DayOfWeek,
+  AgeRangeType,
+  GenderType,
+  IncomeRangeType,
+  ParentalStatusType,
+  ProximityRadiusUnits,
+} from './targeting/targeting-types';
 
 /**
  * Google Ads Service - MCC Mode
@@ -747,5 +757,394 @@ export class GoogleAdsService {
     } catch (error) {
       this.handleGoogleAdsError(error);
     }
+  }
+
+  // ============ Campaign Targeting Operations ============
+
+  /**
+   * List campaign targeting criteria
+   */
+  async listCampaignCriteria(
+    customerId: string,
+    campaignId: string,
+  ): Promise<unknown[]> {
+    const query = `
+      SELECT
+        campaign_criterion.criterion_id,
+        campaign_criterion.type,
+        campaign_criterion.status,
+        campaign_criterion.negative,
+        campaign_criterion.bid_modifier,
+        campaign_criterion.location.geo_target_constant,
+        campaign_criterion.proximity.geo_point.latitude_in_micro_degrees,
+        campaign_criterion.proximity.geo_point.longitude_in_micro_degrees,
+        campaign_criterion.proximity.radius,
+        campaign_criterion.proximity.radius_units,
+        campaign_criterion.device.type,
+        campaign_criterion.ad_schedule.day_of_week,
+        campaign_criterion.ad_schedule.start_hour,
+        campaign_criterion.ad_schedule.start_minute,
+        campaign_criterion.ad_schedule.end_hour,
+        campaign_criterion.ad_schedule.end_minute,
+        campaign_criterion.age_range.type,
+        campaign_criterion.gender.type,
+        campaign_criterion.income_range.type,
+        campaign_criterion.parental_status.type,
+        campaign_criterion.user_list.user_list
+      FROM campaign_criterion
+      WHERE campaign.id = ${campaignId}
+    `;
+
+    return this.query(customerId, query);
+  }
+
+  /**
+   * Add campaign targeting criterion
+   */
+  async addCampaignCriterion(
+    customerId: string,
+    campaignId: string,
+    criterion: {
+      type: TargetingType;
+      geoTargetConstant?: string;
+      latitude?: number;
+      longitude?: number;
+      radius?: number;
+      radiusUnits?: ProximityRadiusUnits;
+      device?: DeviceType;
+      dayOfWeek?: DayOfWeek;
+      startHour?: number;
+      startMinute?: number;
+      endHour?: number;
+      endMinute?: number;
+      ageRange?: AgeRangeType;
+      gender?: GenderType;
+      incomeRange?: IncomeRangeType;
+      parentalStatus?: ParentalStatusType;
+      userListId?: string;
+      negative?: boolean;
+      bidModifier?: number;
+    },
+  ): Promise<unknown> {
+    const campaignResourceName = `customers/${customerId}/campaigns/${campaignId}`;
+    const resource: Record<string, unknown> = {
+      campaign: campaignResourceName,
+      negative: criterion.negative || false,
+    };
+
+    if (criterion.bidModifier !== undefined) {
+      resource.bid_modifier = criterion.bidModifier;
+    }
+
+    // Build criterion based on type
+    switch (criterion.type) {
+      case TargetingType.LOCATION:
+        resource.location = {
+          geo_target_constant: `geoTargetConstants/${criterion.geoTargetConstant}`,
+        };
+        break;
+
+      case TargetingType.PROXIMITY:
+        resource.proximity = {
+          geo_point: {
+            latitude_in_micro_degrees: Math.round(
+              (criterion.latitude || 0) * 1000000,
+            ),
+            longitude_in_micro_degrees: Math.round(
+              (criterion.longitude || 0) * 1000000,
+            ),
+          },
+          radius: criterion.radius,
+          radius_units:
+            criterion.radiusUnits === ProximityRadiusUnits.KILOMETERS
+              ? enums.ProximityRadiusUnits.KILOMETERS
+              : enums.ProximityRadiusUnits.MILES,
+        };
+        break;
+
+      case TargetingType.DEVICE:
+        resource.device = {
+          type: this.mapDeviceType(criterion.device),
+        };
+        break;
+
+      case TargetingType.SCHEDULE:
+        resource.ad_schedule = {
+          day_of_week: this.mapDayOfWeek(criterion.dayOfWeek),
+          start_hour: criterion.startHour,
+          start_minute: this.mapMinute(criterion.startMinute),
+          end_hour: criterion.endHour,
+          end_minute: this.mapMinute(criterion.endMinute),
+        };
+        break;
+
+      case TargetingType.AGE_RANGE:
+        resource.age_range = {
+          type: this.mapAgeRangeType(criterion.ageRange),
+        };
+        break;
+
+      case TargetingType.GENDER:
+        resource.gender = {
+          type: this.mapGenderType(criterion.gender),
+        };
+        break;
+
+      case TargetingType.INCOME_RANGE:
+        resource.income_range = {
+          type: this.mapIncomeRangeType(criterion.incomeRange),
+        };
+        break;
+
+      case TargetingType.PARENTAL_STATUS:
+        resource.parental_status = {
+          type: this.mapParentalStatusType(criterion.parentalStatus),
+        };
+        break;
+
+      case TargetingType.USER_LIST:
+        resource.user_list = {
+          user_list: `customers/${customerId}/userLists/${criterion.userListId}`,
+        };
+        break;
+    }
+
+    return this.mutate(customerId, [
+      {
+        entity: 'campaign_criterion',
+        operation: 'create',
+        resource,
+      },
+    ]);
+  }
+
+  /**
+   * Remove campaign targeting criterion
+   */
+  async removeCampaignCriterion(
+    customerId: string,
+    campaignId: string,
+    criterionId: string,
+  ): Promise<unknown> {
+    const resourceName = `customers/${customerId}/campaignCriteria/${campaignId}~${criterionId}`;
+    try {
+      const customer = this.getCustomer(customerId);
+      return await customer.campaignCriteria.remove([resourceName]);
+    } catch (error) {
+      this.handleGoogleAdsError(error);
+    }
+  }
+
+  // ============ Ad Group Targeting Operations ============
+
+  /**
+   * List ad group targeting criteria (excluding keywords)
+   */
+  async listAdGroupCriteria(
+    customerId: string,
+    adGroupId: string,
+  ): Promise<unknown[]> {
+    const query = `
+      SELECT
+        ad_group_criterion.criterion_id,
+        ad_group_criterion.type,
+        ad_group_criterion.status,
+        ad_group_criterion.negative,
+        ad_group_criterion.bid_modifier,
+        ad_group_criterion.age_range.type,
+        ad_group_criterion.gender.type,
+        ad_group_criterion.income_range.type,
+        ad_group_criterion.parental_status.type,
+        ad_group_criterion.user_list.user_list
+      FROM ad_group_criterion
+      WHERE ad_group.id = ${adGroupId}
+        AND ad_group_criterion.type IN (
+          'AGE_RANGE',
+          'GENDER',
+          'INCOME_RANGE',
+          'PARENTAL_STATUS',
+          'USER_LIST',
+          'CUSTOM_AUDIENCE',
+          'COMBINED_AUDIENCE'
+        )
+    `;
+
+    return this.query(customerId, query);
+  }
+
+  /**
+   * Add ad group targeting criterion
+   */
+  async addAdGroupCriterion(
+    customerId: string,
+    adGroupId: string,
+    criterion: {
+      type: TargetingType;
+      ageRange?: AgeRangeType;
+      gender?: GenderType;
+      incomeRange?: IncomeRangeType;
+      parentalStatus?: ParentalStatusType;
+      userListId?: string;
+      negative?: boolean;
+      bidModifier?: number;
+    },
+  ): Promise<unknown> {
+    const adGroupResourceName = `customers/${customerId}/adGroups/${adGroupId}`;
+    const resource: Record<string, unknown> = {
+      ad_group: adGroupResourceName,
+      negative: criterion.negative || false,
+      status: enums.AdGroupCriterionStatus.ENABLED,
+    };
+
+    if (criterion.bidModifier !== undefined) {
+      resource.bid_modifier = criterion.bidModifier;
+    }
+
+    // Build criterion based on type
+    switch (criterion.type) {
+      case TargetingType.AGE_RANGE:
+        resource.age_range = {
+          type: this.mapAgeRangeType(criterion.ageRange),
+        };
+        break;
+
+      case TargetingType.GENDER:
+        resource.gender = {
+          type: this.mapGenderType(criterion.gender),
+        };
+        break;
+
+      case TargetingType.INCOME_RANGE:
+        resource.income_range = {
+          type: this.mapIncomeRangeType(criterion.incomeRange),
+        };
+        break;
+
+      case TargetingType.PARENTAL_STATUS:
+        resource.parental_status = {
+          type: this.mapParentalStatusType(criterion.parentalStatus),
+        };
+        break;
+
+      case TargetingType.USER_LIST:
+        resource.user_list = {
+          user_list: `customers/${customerId}/userLists/${criterion.userListId}`,
+        };
+        break;
+    }
+
+    return this.mutate(customerId, [
+      {
+        entity: 'ad_group_criterion',
+        operation: 'create',
+        resource,
+      },
+    ]);
+  }
+
+  /**
+   * Remove ad group targeting criterion
+   */
+  async removeAdGroupCriterion(
+    customerId: string,
+    adGroupId: string,
+    criterionId: string,
+  ): Promise<unknown> {
+    const resourceName = `customers/${customerId}/adGroupCriteria/${adGroupId}~${criterionId}`;
+    try {
+      const customer = this.getCustomer(customerId);
+      return await customer.adGroupCriteria.remove([resourceName]);
+    } catch (error) {
+      this.handleGoogleAdsError(error);
+    }
+  }
+
+  // ============ Helper Methods for Enum Mapping ============
+
+  private mapDeviceType(device?: DeviceType): number {
+    const map: Record<DeviceType, number> = {
+      [DeviceType.MOBILE]: enums.Device.MOBILE,
+      [DeviceType.DESKTOP]: enums.Device.DESKTOP,
+      [DeviceType.TABLET]: enums.Device.TABLET,
+      [DeviceType.CONNECTED_TV]: enums.Device.CONNECTED_TV,
+    };
+    return device ? map[device] : enums.Device.UNSPECIFIED;
+  }
+
+  private mapDayOfWeek(day?: DayOfWeek): number {
+    const map: Record<DayOfWeek, number> = {
+      [DayOfWeek.MONDAY]: enums.DayOfWeek.MONDAY,
+      [DayOfWeek.TUESDAY]: enums.DayOfWeek.TUESDAY,
+      [DayOfWeek.WEDNESDAY]: enums.DayOfWeek.WEDNESDAY,
+      [DayOfWeek.THURSDAY]: enums.DayOfWeek.THURSDAY,
+      [DayOfWeek.FRIDAY]: enums.DayOfWeek.FRIDAY,
+      [DayOfWeek.SATURDAY]: enums.DayOfWeek.SATURDAY,
+      [DayOfWeek.SUNDAY]: enums.DayOfWeek.SUNDAY,
+    };
+    return day ? map[day] : enums.DayOfWeek.UNSPECIFIED;
+  }
+
+  private mapMinute(minute?: number): number {
+    const map: Record<number, number> = {
+      0: enums.MinuteOfHour.ZERO,
+      15: enums.MinuteOfHour.FIFTEEN,
+      30: enums.MinuteOfHour.THIRTY,
+      45: enums.MinuteOfHour.FORTY_FIVE,
+    };
+    return minute !== undefined ? (map[minute] ?? enums.MinuteOfHour.ZERO) : enums.MinuteOfHour.ZERO;
+  }
+
+  private mapAgeRangeType(ageRange?: AgeRangeType): number {
+    const map: Record<AgeRangeType, number> = {
+      [AgeRangeType.AGE_RANGE_18_24]: enums.AgeRangeType.AGE_RANGE_18_24,
+      [AgeRangeType.AGE_RANGE_25_34]: enums.AgeRangeType.AGE_RANGE_25_34,
+      [AgeRangeType.AGE_RANGE_35_44]: enums.AgeRangeType.AGE_RANGE_35_44,
+      [AgeRangeType.AGE_RANGE_45_54]: enums.AgeRangeType.AGE_RANGE_45_54,
+      [AgeRangeType.AGE_RANGE_55_64]: enums.AgeRangeType.AGE_RANGE_55_64,
+      [AgeRangeType.AGE_RANGE_65_UP]: enums.AgeRangeType.AGE_RANGE_65_UP,
+      [AgeRangeType.AGE_RANGE_UNDETERMINED]:
+        enums.AgeRangeType.AGE_RANGE_UNDETERMINED,
+    };
+    return ageRange ? map[ageRange] : enums.AgeRangeType.UNSPECIFIED;
+  }
+
+  private mapGenderType(gender?: GenderType): number {
+    const map: Record<GenderType, number> = {
+      [GenderType.MALE]: enums.GenderType.MALE,
+      [GenderType.FEMALE]: enums.GenderType.FEMALE,
+      [GenderType.UNDETERMINED]: enums.GenderType.UNDETERMINED,
+    };
+    return gender ? map[gender] : enums.GenderType.UNSPECIFIED;
+  }
+
+  private mapIncomeRangeType(incomeRange?: IncomeRangeType): number {
+    const map: Record<IncomeRangeType, number> = {
+      [IncomeRangeType.INCOME_RANGE_0_50]:
+        enums.IncomeRangeType.INCOME_RANGE_0_50,
+      [IncomeRangeType.INCOME_RANGE_50_60]:
+        enums.IncomeRangeType.INCOME_RANGE_50_60,
+      [IncomeRangeType.INCOME_RANGE_60_70]:
+        enums.IncomeRangeType.INCOME_RANGE_60_70,
+      [IncomeRangeType.INCOME_RANGE_70_80]:
+        enums.IncomeRangeType.INCOME_RANGE_70_80,
+      [IncomeRangeType.INCOME_RANGE_80_90]:
+        enums.IncomeRangeType.INCOME_RANGE_80_90,
+      [IncomeRangeType.INCOME_RANGE_90_UP]:
+        enums.IncomeRangeType.INCOME_RANGE_90_UP,
+      [IncomeRangeType.INCOME_RANGE_UNDETERMINED]:
+        enums.IncomeRangeType.INCOME_RANGE_UNDETERMINED,
+    };
+    return incomeRange ? map[incomeRange] : enums.IncomeRangeType.UNSPECIFIED;
+  }
+
+  private mapParentalStatusType(parentalStatus?: ParentalStatusType): number {
+    const map: Record<ParentalStatusType, number> = {
+      [ParentalStatusType.PARENT]: enums.ParentalStatusType.PARENT,
+      [ParentalStatusType.NOT_A_PARENT]: enums.ParentalStatusType.NOT_A_PARENT,
+      [ParentalStatusType.UNDETERMINED]: enums.ParentalStatusType.UNDETERMINED,
+    };
+    return parentalStatus
+      ? map[parentalStatus]
+      : enums.ParentalStatusType.UNSPECIFIED;
   }
 }

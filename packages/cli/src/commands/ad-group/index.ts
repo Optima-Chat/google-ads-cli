@@ -8,6 +8,7 @@ import { infoCommand } from './info.js';
 import { createCommand } from './create.js';
 import { updateCommand } from './update.js';
 import { deleteCommand } from './delete.js';
+import { targetingCommand } from './targeting/index.js';
 
 export const adGroupCommand = new Command('ad-group')
   .description('广告组管理')
@@ -15,4 +16,5 @@ export const adGroupCommand = new Command('ad-group')
   .addCommand(infoCommand)
   .addCommand(createCommand)
   .addCommand(updateCommand)
-  .addCommand(deleteCommand);
+  .addCommand(deleteCommand)
+  .addCommand(targetingCommand);
