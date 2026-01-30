@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CredentialsService } from '../credentials/credentials.service';
 import {
   GoogleAdsApi,
   Customer,
@@ -10,47 +9,43 @@ import {
 } from 'google-ads-api';
 
 /**
- * Google Ads Service - Core service for Google Ads API operations
+ * Google Ads Service - MCC Mode
  *
- * Migrated from CLI's google-ads-client.ts
+ * 使用 Agency 的 refresh_token 管理所有客户账号
  */
 @Injectable()
 export class GoogleAdsService {
   private api: GoogleAdsApi;
-  private developerToken: string;
-  private loginCustomerId?: string;
+  private refreshToken: string;
+  private loginCustomerId: string;
 
-  constructor(
-    private configService: ConfigService,
-    private credentialsService: CredentialsService,
-  ) {
-    this.developerToken = configService.get<string>(
-      'GOOGLE_ADS_DEVELOPER_TOKEN',
+  constructor(private configService: ConfigService) {
+    this.refreshToken = configService.get<string>(
+      'GOOGLE_ADS_REFRESH_TOKEN',
       '',
     );
     this.loginCustomerId = configService.get<string>(
       'GOOGLE_ADS_MANAGER_ACCOUNT_ID',
+      '',
     );
 
     this.api = new GoogleAdsApi({
       client_id: configService.get<string>('GOOGLE_ADS_CLIENT_ID', ''),
       client_secret: configService.get<string>('GOOGLE_ADS_CLIENT_SECRET', ''),
-      developer_token: this.developerToken,
+      developer_token: configService.get<string>(
+        'GOOGLE_ADS_DEVELOPER_TOKEN',
+        '',
+      ),
     });
   }
 
   /**
-   * Get Customer object with authentication
+   * Get Customer object with MCC authentication
    */
-  async getCustomer(userId: string, customerId: string): Promise<Customer> {
-    const credentials = await this.credentialsService.findByUserId(userId);
-    if (!credentials) {
-      throw new Error('Google Ads not connected');
-    }
-
+  getCustomer(customerId: string): Customer {
     return this.api.Customer({
       customer_id: customerId,
-      refresh_token: credentials.refreshToken,
+      refresh_token: this.refreshToken,
       login_customer_id: this.loginCustomerId,
     });
   }
@@ -58,19 +53,15 @@ export class GoogleAdsService {
   /**
    * Execute GAQL query
    */
-  async query(
-    userId: string,
-    customerId: string,
-    gaqlQuery: string,
-  ): Promise<unknown[]> {
-    const customer = await this.getCustomer(userId, customerId);
+  async query(customerId: string, gaqlQuery: string): Promise<unknown[]> {
+    const customer = this.getCustomer(customerId);
     return customer.query(gaqlQuery);
   }
 
   /**
    * Get customer account info
    */
-  async getCustomerInfo(userId: string, customerId: string): Promise<unknown> {
+  async getCustomerInfo(customerId: string): Promise<unknown> {
     const query = `
       SELECT
         customer.id,
@@ -84,22 +75,15 @@ export class GoogleAdsService {
       WHERE customer.id = ${customerId}
     `;
 
-    const results = await this.query(userId, customerId, query);
+    const results = await this.query(customerId, query);
     return (results[0] as Record<string, unknown>)?.customer || null;
   }
 
   /**
-   * List accessible customer accounts
+   * List accessible customer accounts under MCC
    */
-  async listAccessibleCustomers(userId: string): Promise<string[]> {
-    const credentials = await this.credentialsService.findByUserId(userId);
-    if (!credentials) {
-      throw new Error('Google Ads not connected');
-    }
-
-    const response = await this.api.listAccessibleCustomers(
-      credentials.refreshToken,
-    );
+  async listAccessibleCustomers(): Promise<string[]> {
+    const response = await this.api.listAccessibleCustomers(this.refreshToken);
 
     const resourceNames = response.resource_names || [];
     return resourceNames
@@ -113,7 +97,6 @@ export class GoogleAdsService {
   // ============ Campaign Operations ============
 
   async listCampaigns(
-    userId: string,
     customerId: string,
     options?: { status?: string; limit?: number },
   ): Promise<unknown[]> {
@@ -149,14 +132,10 @@ export class GoogleAdsService {
       query += ` LIMIT ${options.limit}`;
     }
 
-    return this.query(userId, customerId, query);
+    return this.query(customerId, query);
   }
 
-  async getCampaign(
-    userId: string,
-    customerId: string,
-    campaignId: string,
-  ): Promise<unknown> {
+  async getCampaign(customerId: string, campaignId: string): Promise<unknown> {
     const query = `
       SELECT
         campaign.id,
@@ -182,12 +161,11 @@ export class GoogleAdsService {
       WHERE campaign.id = ${campaignId}
     `;
 
-    const results = await this.query(userId, customerId, query);
+    const results = await this.query(customerId, query);
     return results[0] || null;
   }
 
   async createCampaign(
-    userId: string,
     customerId: string,
     data: {
       name: string;
@@ -196,7 +174,7 @@ export class GoogleAdsService {
       status?: string;
     },
   ): Promise<unknown> {
-    const customer = await this.getCustomer(userId, customerId);
+    const customer = this.getCustomer(customerId);
     const budgetResourceName = `customers/${customerId}/campaignBudgets/-1`;
 
     const operations: MutateOperation<unknown>[] = [
@@ -232,12 +210,11 @@ export class GoogleAdsService {
   }
 
   async updateCampaign(
-    userId: string,
     customerId: string,
     campaignId: string,
     data: { status?: string; name?: string; budgetAmountMicros?: number },
   ): Promise<unknown> {
-    const customer = await this.getCustomer(userId, customerId);
+    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/campaigns/${campaignId}`;
     const resource: Record<string, unknown> = {};
 
@@ -279,11 +256,10 @@ export class GoogleAdsService {
   }
 
   async deleteCampaign(
-    userId: string,
     customerId: string,
     campaignId: string,
   ): Promise<unknown> {
-    const customer = await this.getCustomer(userId, customerId);
+    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/campaigns/${campaignId}`;
     return customer.campaigns.remove([resourceName]);
   }
@@ -291,7 +267,6 @@ export class GoogleAdsService {
   // ============ Ad Group Operations ============
 
   async listAdGroups(
-    userId: string,
     customerId: string,
     options?: { campaignId?: string; status?: string; limit?: number },
   ): Promise<unknown[]> {
@@ -325,14 +300,10 @@ export class GoogleAdsService {
 
     query += ` LIMIT ${options?.limit || 100}`;
 
-    return this.query(userId, customerId, query);
+    return this.query(customerId, query);
   }
 
-  async getAdGroup(
-    userId: string,
-    customerId: string,
-    adGroupId: string,
-  ): Promise<unknown> {
+  async getAdGroup(customerId: string, adGroupId: string): Promise<unknown> {
     const query = `
       SELECT
         ad_group.id,
@@ -350,12 +321,11 @@ export class GoogleAdsService {
       WHERE ad_group.id = ${adGroupId}
     `;
 
-    const results = await this.query(userId, customerId, query);
+    const results = await this.query(customerId, query);
     return results[0] || null;
   }
 
   async createAdGroup(
-    userId: string,
     customerId: string,
     data: {
       name: string;
@@ -364,7 +334,7 @@ export class GoogleAdsService {
       status?: string;
     },
   ): Promise<unknown> {
-    const customer = await this.getCustomer(userId, customerId);
+    const customer = this.getCustomer(customerId);
     const campaignResourceName = `customers/${customerId}/campaigns/${data.campaignId}`;
 
     return customer.mutateResources([
@@ -382,12 +352,11 @@ export class GoogleAdsService {
   }
 
   async updateAdGroup(
-    userId: string,
     customerId: string,
     adGroupId: string,
     data: { status?: string; name?: string; cpcBidMicros?: number },
   ): Promise<unknown> {
-    const customer = await this.getCustomer(userId, customerId);
+    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/adGroups/${adGroupId}`;
 
     const resource: Record<string, unknown> = { resource_name: resourceName };
@@ -401,11 +370,10 @@ export class GoogleAdsService {
   }
 
   async deleteAdGroup(
-    userId: string,
     customerId: string,
     adGroupId: string,
   ): Promise<unknown> {
-    const customer = await this.getCustomer(userId, customerId);
+    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/adGroups/${adGroupId}`;
     return customer.adGroups.remove([resourceName]);
   }
@@ -413,7 +381,6 @@ export class GoogleAdsService {
   // ============ Keyword Operations ============
 
   async listKeywords(
-    userId: string,
     customerId: string,
     options?: { campaignId?: string; status?: string; limit?: number },
   ): Promise<unknown[]> {
@@ -451,16 +418,15 @@ export class GoogleAdsService {
     query += ' ORDER BY metrics.impressions DESC';
     if (options?.limit) query += ` LIMIT ${options.limit}`;
 
-    return this.query(userId, customerId, query);
+    return this.query(customerId, query);
   }
 
   async addKeywords(
-    userId: string,
     customerId: string,
     adGroupId: string,
     keywords: Array<{ text: string; matchType?: string }>,
   ): Promise<unknown> {
-    const customer = await this.getCustomer(userId, customerId);
+    const customer = this.getCustomer(customerId);
     const adGroupResourceName = `customers/${customerId}/adGroups/${adGroupId}`;
 
     const operations: MutateOperation<unknown>[] = keywords.map((keyword) => ({
@@ -480,13 +446,12 @@ export class GoogleAdsService {
   }
 
   async updateKeyword(
-    userId: string,
     customerId: string,
     adGroupId: string,
     criterionId: string,
     data: { status?: string; cpcBidMicros?: number },
   ): Promise<unknown> {
-    const customer = await this.getCustomer(userId, customerId);
+    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/adGroupCriteria/${adGroupId}~${criterionId}`;
 
     const resource: Record<string, unknown> = { resource_name: resourceName };
@@ -499,12 +464,11 @@ export class GoogleAdsService {
   }
 
   async deleteKeyword(
-    userId: string,
     customerId: string,
     adGroupId: string,
     criterionId: string,
   ): Promise<unknown> {
-    const customer = await this.getCustomer(userId, customerId);
+    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/adGroupCriteria/${adGroupId}~${criterionId}`;
     return customer.adGroupCriteria.remove([resourceName]);
   }
@@ -512,7 +476,6 @@ export class GoogleAdsService {
   // ============ Ad Operations ============
 
   async listAds(
-    userId: string,
     customerId: string,
     options?: {
       campaignId?: string;
@@ -558,11 +521,10 @@ export class GoogleAdsService {
 
     query += ` LIMIT ${options?.limit || 100}`;
 
-    return this.query(userId, customerId, query);
+    return this.query(customerId, query);
   }
 
   async getAd(
-    userId: string,
     customerId: string,
     adGroupId: string,
     adId: string,
@@ -590,12 +552,11 @@ export class GoogleAdsService {
       WHERE ad_group.id = ${adGroupId} AND ad_group_ad.ad.id = ${adId}
     `;
 
-    const results = await this.query(userId, customerId, query);
+    const results = await this.query(customerId, query);
     return results[0] || null;
   }
 
   async createAd(
-    userId: string,
     customerId: string,
     data: {
       adGroupId: string;
@@ -607,7 +568,7 @@ export class GoogleAdsService {
       status?: string;
     },
   ): Promise<unknown> {
-    const customer = await this.getCustomer(userId, customerId);
+    const customer = this.getCustomer(customerId);
 
     return customer.mutateResources([
       {
@@ -634,13 +595,12 @@ export class GoogleAdsService {
   }
 
   async updateAd(
-    userId: string,
     customerId: string,
     adGroupId: string,
     adId: string,
     data: { status?: string },
   ): Promise<unknown> {
-    const customer = await this.getCustomer(userId, customerId);
+    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/adGroupAds/${adGroupId}~${adId}`;
 
     const resource: Record<string, unknown> = { resource_name: resourceName };
@@ -652,12 +612,11 @@ export class GoogleAdsService {
   }
 
   async deleteAd(
-    userId: string,
     customerId: string,
     adGroupId: string,
     adId: string,
   ): Promise<unknown> {
-    const customer = await this.getCustomer(userId, customerId);
+    const customer = this.getCustomer(customerId);
     const resourceName = `customers/${customerId}/adGroupAds/${adGroupId}~${adId}`;
     return customer.adGroupAds.remove([resourceName]);
   }

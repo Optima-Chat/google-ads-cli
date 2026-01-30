@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { GoogleAdsService } from './google-ads.service';
 import { CampaignsController } from './campaigns/campaigns.controller';
 import { CampaignsService } from './campaigns/campaigns.service';
@@ -11,11 +11,10 @@ import { AdsService } from './ads/ads.service';
 import { QueryController } from './query/query.controller';
 import { QueryService } from './query/query.service';
 import { AccountsController } from './accounts.controller';
-import { CredentialsModule } from '../credentials/credentials.module';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [CredentialsModule, AuthModule],
+  imports: [forwardRef(() => AuthModule)],
   controllers: [
     AccountsController,
     CampaignsController,

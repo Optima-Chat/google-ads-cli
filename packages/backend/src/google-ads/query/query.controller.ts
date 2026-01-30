@@ -1,6 +1,5 @@
 import { Controller, Post, Param, Body, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/user.decorator';
 import { QueryService } from './query.service';
 import { ExecuteQueryDto } from './query.dto';
 
@@ -15,10 +14,9 @@ export class QueryController {
    */
   @Post()
   async execute(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Body() dto: ExecuteQueryDto,
   ) {
-    return this.queryService.execute(userId, customerId, dto.query);
+    return this.queryService.execute(customerId, dto.query);
   }
 }

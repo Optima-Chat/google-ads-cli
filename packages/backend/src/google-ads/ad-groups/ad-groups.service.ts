@@ -11,31 +11,22 @@ export class AdGroupsService {
   constructor(private googleAdsService: GoogleAdsService) {}
 
   async list(
-    userId: string,
     customerId: string,
     query: ListAdGroupsQueryDto,
   ): Promise<unknown[]> {
-    return this.googleAdsService.listAdGroups(userId, customerId, {
+    return this.googleAdsService.listAdGroups(customerId, {
       campaignId: query.campaignId,
       status: query.status,
       limit: query.limit,
     });
   }
 
-  async get(
-    userId: string,
-    customerId: string,
-    adGroupId: string,
-  ): Promise<unknown> {
-    return this.googleAdsService.getAdGroup(userId, customerId, adGroupId);
+  async get(customerId: string, adGroupId: string): Promise<unknown> {
+    return this.googleAdsService.getAdGroup(customerId, adGroupId);
   }
 
-  async create(
-    userId: string,
-    customerId: string,
-    dto: CreateAdGroupDto,
-  ): Promise<unknown> {
-    return this.googleAdsService.createAdGroup(userId, customerId, {
+  async create(customerId: string, dto: CreateAdGroupDto): Promise<unknown> {
+    return this.googleAdsService.createAdGroup(customerId, {
       name: dto.name,
       campaignId: dto.campaignId,
       cpcBidMicros: dto.cpcBidMicros,
@@ -44,23 +35,18 @@ export class AdGroupsService {
   }
 
   async update(
-    userId: string,
     customerId: string,
     adGroupId: string,
     dto: UpdateAdGroupDto,
   ): Promise<unknown> {
-    return this.googleAdsService.updateAdGroup(userId, customerId, adGroupId, {
+    return this.googleAdsService.updateAdGroup(customerId, adGroupId, {
       status: dto.status,
       name: dto.name,
       cpcBidMicros: dto.cpcBidMicros,
     });
   }
 
-  async delete(
-    userId: string,
-    customerId: string,
-    adGroupId: string,
-  ): Promise<unknown> {
-    return this.googleAdsService.deleteAdGroup(userId, customerId, adGroupId);
+  async delete(customerId: string, adGroupId: string): Promise<unknown> {
+    return this.googleAdsService.deleteAdGroup(customerId, adGroupId);
   }
 }

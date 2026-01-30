@@ -11,24 +11,18 @@ export class KeywordsService {
   constructor(private googleAdsService: GoogleAdsService) {}
 
   async list(
-    userId: string,
     customerId: string,
     query: ListKeywordsQueryDto,
   ): Promise<unknown[]> {
-    return this.googleAdsService.listKeywords(userId, customerId, {
+    return this.googleAdsService.listKeywords(customerId, {
       campaignId: query.campaignId,
       status: query.status,
       limit: query.limit,
     });
   }
 
-  async add(
-    userId: string,
-    customerId: string,
-    dto: AddKeywordsDto,
-  ): Promise<unknown> {
+  async add(customerId: string, dto: AddKeywordsDto): Promise<unknown> {
     return this.googleAdsService.addKeywords(
-      userId,
       customerId,
       dto.adGroupId,
       dto.keywords,
@@ -36,14 +30,12 @@ export class KeywordsService {
   }
 
   async update(
-    userId: string,
     customerId: string,
     adGroupId: string,
     criterionId: string,
     dto: UpdateKeywordDto,
   ): Promise<unknown> {
     return this.googleAdsService.updateKeyword(
-      userId,
       customerId,
       adGroupId,
       criterionId,
@@ -55,13 +47,11 @@ export class KeywordsService {
   }
 
   async delete(
-    userId: string,
     customerId: string,
     adGroupId: string,
     criterionId: string,
   ): Promise<unknown> {
     return this.googleAdsService.deleteKeyword(
-      userId,
       customerId,
       adGroupId,
       criterionId,

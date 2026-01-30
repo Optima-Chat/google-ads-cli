@@ -1,6 +1,5 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CurrentUser } from '../common/decorators/user.decorator';
 import { GoogleAdsService } from './google-ads.service';
 
 @Controller('accounts')
@@ -13,9 +12,8 @@ export class AccountsController {
    * GET /api/v1/accounts
    */
   @Get()
-  async listAccounts(@CurrentUser('userId') userId: string) {
-    const customerIds =
-      await this.googleAdsService.listAccessibleCustomers(userId);
+  async listAccounts() {
+    const customerIds = await this.googleAdsService.listAccessibleCustomers();
 
     return {
       accounts: customerIds.map((id) => ({ customerId: id })),
@@ -27,11 +25,8 @@ export class AccountsController {
    * GET /api/v1/accounts/:customerId
    */
   @Get(':customerId')
-  async getAccount(
-    @CurrentUser('userId') userId: string,
-    @Param('customerId') customerId: string,
-  ) {
-    const info = await this.googleAdsService.getCustomerInfo(userId, customerId);
+  async getAccount(@Param('customerId') customerId: string) {
+    const info = await this.googleAdsService.getCustomerInfo(customerId);
     return info;
   }
 
@@ -40,15 +35,9 @@ export class AccountsController {
    * GET /api/v1/accounts/:customerId/check
    */
   @Get(':customerId/check')
-  async checkAccount(
-    @CurrentUser('userId') userId: string,
-    @Param('customerId') customerId: string,
-  ) {
+  async checkAccount(@Param('customerId') customerId: string) {
     try {
-      const info = await this.googleAdsService.getCustomerInfo(
-        userId,
-        customerId,
-      );
+      const info = await this.googleAdsService.getCustomerInfo(customerId);
       return {
         connected: true,
         customerId,

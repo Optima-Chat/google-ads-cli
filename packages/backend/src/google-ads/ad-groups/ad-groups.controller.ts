@@ -10,7 +10,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/user.decorator';
 import { AdGroupsService } from './ad-groups.service';
 import {
   CreateAdGroupDto,
@@ -29,11 +28,10 @@ export class AdGroupsController {
    */
   @Get()
   async list(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Query() query: ListAdGroupsQueryDto,
   ) {
-    return this.adGroupsService.list(userId, customerId, query);
+    return this.adGroupsService.list(customerId, query);
   }
 
   /**
@@ -42,11 +40,10 @@ export class AdGroupsController {
    */
   @Get(':id')
   async get(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Param('id') adGroupId: string,
   ) {
-    return this.adGroupsService.get(userId, customerId, adGroupId);
+    return this.adGroupsService.get(customerId, adGroupId);
   }
 
   /**
@@ -55,11 +52,10 @@ export class AdGroupsController {
    */
   @Post()
   async create(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Body() dto: CreateAdGroupDto,
   ) {
-    return this.adGroupsService.create(userId, customerId, dto);
+    return this.adGroupsService.create(customerId, dto);
   }
 
   /**
@@ -68,12 +64,11 @@ export class AdGroupsController {
    */
   @Patch(':id')
   async update(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Param('id') adGroupId: string,
     @Body() dto: UpdateAdGroupDto,
   ) {
-    return this.adGroupsService.update(userId, customerId, adGroupId, dto);
+    return this.adGroupsService.update(customerId, adGroupId, dto);
   }
 
   /**
@@ -82,10 +77,9 @@ export class AdGroupsController {
    */
   @Delete(':id')
   async delete(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Param('id') adGroupId: string,
   ) {
-    return this.adGroupsService.delete(userId, customerId, adGroupId);
+    return this.adGroupsService.delete(customerId, adGroupId);
   }
 }

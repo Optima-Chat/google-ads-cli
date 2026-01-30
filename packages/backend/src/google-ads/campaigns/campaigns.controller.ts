@@ -10,7 +10,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/user.decorator';
 import { CampaignsService } from './campaigns.service';
 import {
   CreateCampaignDto,
@@ -29,11 +28,10 @@ export class CampaignsController {
    */
   @Get()
   async list(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Query() query: ListCampaignsQueryDto,
   ) {
-    return this.campaignsService.list(userId, customerId, query);
+    return this.campaignsService.list(customerId, query);
   }
 
   /**
@@ -42,11 +40,10 @@ export class CampaignsController {
    */
   @Get(':id')
   async get(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Param('id') campaignId: string,
   ) {
-    return this.campaignsService.get(userId, customerId, campaignId);
+    return this.campaignsService.get(customerId, campaignId);
   }
 
   /**
@@ -55,11 +52,10 @@ export class CampaignsController {
    */
   @Post()
   async create(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Body() dto: CreateCampaignDto,
   ) {
-    return this.campaignsService.create(userId, customerId, dto);
+    return this.campaignsService.create(customerId, dto);
   }
 
   /**
@@ -68,12 +64,11 @@ export class CampaignsController {
    */
   @Patch(':id')
   async update(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Param('id') campaignId: string,
     @Body() dto: UpdateCampaignDto,
   ) {
-    return this.campaignsService.update(userId, customerId, campaignId, dto);
+    return this.campaignsService.update(customerId, campaignId, dto);
   }
 
   /**
@@ -82,10 +77,9 @@ export class CampaignsController {
    */
   @Delete(':id')
   async delete(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Param('id') campaignId: string,
   ) {
-    return this.campaignsService.delete(userId, customerId, campaignId);
+    return this.campaignsService.delete(customerId, campaignId);
   }
 }

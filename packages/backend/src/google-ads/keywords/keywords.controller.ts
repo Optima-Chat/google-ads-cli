@@ -10,7 +10,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/user.decorator';
 import { KeywordsService } from './keywords.service';
 import {
   AddKeywordsDto,
@@ -29,11 +28,10 @@ export class KeywordsController {
    */
   @Get()
   async list(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Query() query: ListKeywordsQueryDto,
   ) {
-    return this.keywordsService.list(userId, customerId, query);
+    return this.keywordsService.list(customerId, query);
   }
 
   /**
@@ -42,11 +40,10 @@ export class KeywordsController {
    */
   @Post()
   async add(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Body() dto: AddKeywordsDto,
   ) {
-    return this.keywordsService.add(userId, customerId, dto);
+    return this.keywordsService.add(customerId, dto);
   }
 
   /**
@@ -55,19 +52,12 @@ export class KeywordsController {
    */
   @Patch(':adGroupId/:criterionId')
   async update(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Param('adGroupId') adGroupId: string,
     @Param('criterionId') criterionId: string,
     @Body() dto: UpdateKeywordDto,
   ) {
-    return this.keywordsService.update(
-      userId,
-      customerId,
-      adGroupId,
-      criterionId,
-      dto,
-    );
+    return this.keywordsService.update(customerId, adGroupId, criterionId, dto);
   }
 
   /**
@@ -76,16 +66,10 @@ export class KeywordsController {
    */
   @Delete(':adGroupId/:criterionId')
   async delete(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Param('adGroupId') adGroupId: string,
     @Param('criterionId') criterionId: string,
   ) {
-    return this.keywordsService.delete(
-      userId,
-      customerId,
-      adGroupId,
-      criterionId,
-    );
+    return this.keywordsService.delete(customerId, adGroupId, criterionId);
   }
 }

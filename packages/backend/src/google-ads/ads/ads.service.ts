@@ -6,12 +6,8 @@ import { CreateAdDto, UpdateAdDto, ListAdsQueryDto } from './ads.dto';
 export class AdsService {
   constructor(private googleAdsService: GoogleAdsService) {}
 
-  async list(
-    userId: string,
-    customerId: string,
-    query: ListAdsQueryDto,
-  ): Promise<unknown[]> {
-    return this.googleAdsService.listAds(userId, customerId, {
+  async list(customerId: string, query: ListAdsQueryDto): Promise<unknown[]> {
+    return this.googleAdsService.listAds(customerId, {
       campaignId: query.campaignId,
       adGroupId: query.adGroupId,
       status: query.status,
@@ -20,20 +16,15 @@ export class AdsService {
   }
 
   async get(
-    userId: string,
     customerId: string,
     adGroupId: string,
     adId: string,
   ): Promise<unknown> {
-    return this.googleAdsService.getAd(userId, customerId, adGroupId, adId);
+    return this.googleAdsService.getAd(customerId, adGroupId, adId);
   }
 
-  async create(
-    userId: string,
-    customerId: string,
-    dto: CreateAdDto,
-  ): Promise<unknown> {
-    return this.googleAdsService.createAd(userId, customerId, {
+  async create(customerId: string, dto: CreateAdDto): Promise<unknown> {
+    return this.googleAdsService.createAd(customerId, {
       adGroupId: dto.adGroupId,
       headlines: dto.headlines,
       descriptions: dto.descriptions,
@@ -45,23 +36,21 @@ export class AdsService {
   }
 
   async update(
-    userId: string,
     customerId: string,
     adGroupId: string,
     adId: string,
     dto: UpdateAdDto,
   ): Promise<unknown> {
-    return this.googleAdsService.updateAd(userId, customerId, adGroupId, adId, {
+    return this.googleAdsService.updateAd(customerId, adGroupId, adId, {
       status: dto.status,
     });
   }
 
   async delete(
-    userId: string,
     customerId: string,
     adGroupId: string,
     adId: string,
   ): Promise<unknown> {
-    return this.googleAdsService.deleteAd(userId, customerId, adGroupId, adId);
+    return this.googleAdsService.deleteAd(customerId, adGroupId, adId);
   }
 }

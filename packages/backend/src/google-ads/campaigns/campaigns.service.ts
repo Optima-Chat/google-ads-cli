@@ -11,30 +11,21 @@ export class CampaignsService {
   constructor(private googleAdsService: GoogleAdsService) {}
 
   async list(
-    userId: string,
     customerId: string,
     query: ListCampaignsQueryDto,
   ): Promise<unknown[]> {
-    return this.googleAdsService.listCampaigns(userId, customerId, {
+    return this.googleAdsService.listCampaigns(customerId, {
       status: query.status,
       limit: query.limit,
     });
   }
 
-  async get(
-    userId: string,
-    customerId: string,
-    campaignId: string,
-  ): Promise<unknown> {
-    return this.googleAdsService.getCampaign(userId, customerId, campaignId);
+  async get(customerId: string, campaignId: string): Promise<unknown> {
+    return this.googleAdsService.getCampaign(customerId, campaignId);
   }
 
-  async create(
-    userId: string,
-    customerId: string,
-    dto: CreateCampaignDto,
-  ): Promise<unknown> {
-    return this.googleAdsService.createCampaign(userId, customerId, {
+  async create(customerId: string, dto: CreateCampaignDto): Promise<unknown> {
+    return this.googleAdsService.createCampaign(customerId, {
       name: dto.name,
       budgetAmountMicros: dto.budgetAmountMicros,
       advertisingChannelType: dto.advertisingChannelType,
@@ -43,23 +34,18 @@ export class CampaignsService {
   }
 
   async update(
-    userId: string,
     customerId: string,
     campaignId: string,
     dto: UpdateCampaignDto,
   ): Promise<unknown> {
-    return this.googleAdsService.updateCampaign(userId, customerId, campaignId, {
+    return this.googleAdsService.updateCampaign(customerId, campaignId, {
       status: dto.status,
       name: dto.name,
       budgetAmountMicros: dto.budgetAmountMicros,
     });
   }
 
-  async delete(
-    userId: string,
-    customerId: string,
-    campaignId: string,
-  ): Promise<unknown> {
-    return this.googleAdsService.deleteCampaign(userId, customerId, campaignId);
+  async delete(customerId: string, campaignId: string): Promise<unknown> {
+    return this.googleAdsService.deleteCampaign(customerId, campaignId);
   }
 }

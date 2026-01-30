@@ -10,7 +10,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/user.decorator';
 import { AdsService } from './ads.service';
 import { CreateAdDto, UpdateAdDto, ListAdsQueryDto } from './ads.dto';
 
@@ -25,11 +24,10 @@ export class AdsController {
    */
   @Get()
   async list(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Query() query: ListAdsQueryDto,
   ) {
-    return this.adsService.list(userId, customerId, query);
+    return this.adsService.list(customerId, query);
   }
 
   /**
@@ -38,12 +36,11 @@ export class AdsController {
    */
   @Get(':adGroupId/:adId')
   async get(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Param('adGroupId') adGroupId: string,
     @Param('adId') adId: string,
   ) {
-    return this.adsService.get(userId, customerId, adGroupId, adId);
+    return this.adsService.get(customerId, adGroupId, adId);
   }
 
   /**
@@ -52,11 +49,10 @@ export class AdsController {
    */
   @Post()
   async create(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Body() dto: CreateAdDto,
   ) {
-    return this.adsService.create(userId, customerId, dto);
+    return this.adsService.create(customerId, dto);
   }
 
   /**
@@ -65,13 +61,12 @@ export class AdsController {
    */
   @Patch(':adGroupId/:adId')
   async update(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Param('adGroupId') adGroupId: string,
     @Param('adId') adId: string,
     @Body() dto: UpdateAdDto,
   ) {
-    return this.adsService.update(userId, customerId, adGroupId, adId, dto);
+    return this.adsService.update(customerId, adGroupId, adId, dto);
   }
 
   /**
@@ -80,11 +75,10 @@ export class AdsController {
    */
   @Delete(':adGroupId/:adId')
   async delete(
-    @CurrentUser('userId') userId: string,
     @Param('customerId') customerId: string,
     @Param('adGroupId') adGroupId: string,
     @Param('adId') adId: string,
   ) {
-    return this.adsService.delete(userId, customerId, adGroupId, adId);
+    return this.adsService.delete(customerId, adGroupId, adId);
   }
 }
