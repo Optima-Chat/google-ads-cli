@@ -237,6 +237,70 @@ export class GoogleAdsClient {
   }
 
   /**
+   * 获取广告组详情
+   */
+  async getAdGroup(customerId: string, adGroupId: string): Promise<any> {
+    const query = `
+      SELECT
+        ad_group.id,
+        ad_group.name,
+        ad_group.status,
+        ad_group.type,
+        ad_group.cpc_bid_micros,
+        campaign.id,
+        campaign.name,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros,
+        metrics.conversions
+      FROM ad_group
+      WHERE ad_group.id = ${adGroupId}
+    `;
+
+    const results = await this.query(customerId, query);
+    return results[0] || null;
+  }
+
+  /**
+   * 更新广告组
+   */
+  async updateAdGroup(customerId: string, adGroupId: string, updateData: {
+    status?: string;
+    name?: string;
+    cpcBidMicros?: number;
+  }): Promise<any> {
+    try {
+      const customer = await this.getCustomer(customerId);
+      const resourceName = `customers/${customerId}/adGroups/${adGroupId}`;
+
+      const resource: any = { resource_name: resourceName };
+      if (updateData.status) {
+        resource.status = updateData.status;
+      }
+      if (updateData.name) {
+        resource.name = updateData.name;
+      }
+      if (updateData.cpcBidMicros) {
+        resource.cpc_bid_micros = updateData.cpcBidMicros;
+      }
+
+      const operations: MutateOperation<any>[] = [
+        {
+          entity: 'ad_group',
+          operation: 'update',
+          resource: resource,
+        },
+      ];
+
+      const result = await customer.mutateResources(operations);
+      return result;
+    } catch (error: any) {
+      const errorMessage = error.message || error.details || (error.errors && JSON.stringify(error.errors)) || JSON.stringify(error);
+      throw new GoogleAdsError(`更新广告组失败: ${errorMessage}`, error);
+    }
+  }
+
+  /**
    * 列出关键词
    */
   async listKeywords(customerId: string, campaignId?: string, options?: {
@@ -718,6 +782,68 @@ export class GoogleAdsClient {
     query += ` LIMIT ${options?.limit || 100}`;
 
     return this.query(customerId, query);
+  }
+
+  /**
+   * 获取广告详情
+   */
+  async getAd(customerId: string, adGroupId: string, adId: string): Promise<any> {
+    const query = `
+      SELECT
+        ad_group_ad.ad.id,
+        ad_group_ad.ad.type,
+        ad_group_ad.ad.final_urls,
+        ad_group_ad.ad.responsive_search_ad.headlines,
+        ad_group_ad.ad.responsive_search_ad.descriptions,
+        ad_group_ad.ad.responsive_search_ad.path1,
+        ad_group_ad.ad.responsive_search_ad.path2,
+        ad_group_ad.status,
+        ad_group_ad.policy_summary.approval_status,
+        ad_group.id,
+        ad_group.name,
+        campaign.id,
+        campaign.name,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros,
+        metrics.conversions
+      FROM ad_group_ad
+      WHERE ad_group.id = ${adGroupId} AND ad_group_ad.ad.id = ${adId}
+    `;
+
+    const results = await this.query(customerId, query);
+    return results[0] || null;
+  }
+
+  /**
+   * 更新广告状态
+   */
+  async updateAd(customerId: string, adGroupId: string, adId: string, updateData: {
+    status?: string;
+  }): Promise<any> {
+    try {
+      const customer = await this.getCustomer(customerId);
+      const resourceName = `customers/${customerId}/adGroupAds/${adGroupId}~${adId}`;
+
+      const resource: any = { resource_name: resourceName };
+      if (updateData.status) {
+        resource.status = updateData.status;
+      }
+
+      const operations: MutateOperation<any>[] = [
+        {
+          entity: 'ad_group_ad',
+          operation: 'update',
+          resource: resource,
+        },
+      ];
+
+      const result = await customer.mutateResources(operations);
+      return result;
+    } catch (error: any) {
+      const errorMessage = error.message || error.details || (error.errors && JSON.stringify(error.errors)) || JSON.stringify(error);
+      throw new GoogleAdsError(`更新广告失败: ${errorMessage}`, error);
+    }
   }
 
   /**

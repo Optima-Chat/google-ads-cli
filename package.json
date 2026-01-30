@@ -1,6 +1,6 @@
 {
   "name": "@optima-chat/google-ads-cli",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "用自然语言管理 Google Ads 广告投放 - 专为 Claude Code 设计的对话式 CLI 工具",
   "type": "module",
   "main": "dist/index.js",
